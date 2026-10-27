@@ -1,0 +1,56 @@
+# ---- Secrets and environment (NEVER commit) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+client_secret*.json
+credentials*.json
+token*.json
+application-local.yml
+application-local.properties
+
+# ---- Java / Maven / Gradle ----
+target/
+build/
+.gradle/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+
+# ---- Node / Frontend ----
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Python (if a service is added) ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- Docker / local data ----
+docker-data/
+pgdata/
+*.log
+
+# ---- IDEs and operating system ----
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
