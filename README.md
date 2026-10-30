@@ -24,6 +24,7 @@ Exact versions and rationale: [ADR-0001](docs/decisions/0001-stack-versions.md).
 ```
 fluxis-ai/
 ├── backend/            # Spring Boot (modular monolith)
+├── compose.yaml        # PostgreSQL 18 and backend services
 ├── frontend/           # React + TypeScript + Vite
 ├── docs/
 │   ├── architecture.md
@@ -37,17 +38,37 @@ fluxis-ai/
 
 ## Getting started
 
-This section will be completed as the plan progresses:
-
-- [ ] Day 2: `docker compose up -d` (PostgreSQL) and start the backend.
 - [ ] Day 4: start the frontend (`npm run dev`).
 - [ ] Day 5: run tests and CI.
 
-Prerequisites: JDK 25 (Temurin), Node.js 24 LTS (`.nvmrc`), Docker.
+Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend, or JDK 25 (Temurin) to run the backend outside Docker.
 
 ```bash
 cp .env.example .env   # Fill in the values; never commit .env to Git
+docker compose up --build -d
 ```
+
+Compose starts PostgreSQL 18 and the Spring Boot backend. The backend waits for PostgreSQL's health check before starting, and its own health check calls `/actuator/health`:
+
+```bash
+docker compose ps
+curl http://localhost:8080/actuator/health
+# {"status":"UP"}
+```
+
+On Windows PowerShell, check the endpoint with:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/actuator/health
+```
+
+To run the backend locally instead, start PostgreSQL with `docker compose up -d postgres`, then from `backend/` run:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+The local database defaults match `.env.example`. If you change the database credentials or port there, export the matching `POSTGRES_*` variables in your shell before starting the backend.
 
 ## Security
 
