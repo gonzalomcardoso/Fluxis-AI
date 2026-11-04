@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - test
+      - prod
+      - main
+  pull_request:
+    branches:
+      - dev
+      - test
+      - prod
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests (Java 25)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Run unit, web, and PostgreSQL integration tests
+        working-directory: backend
+        run: bash mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Upload backend test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-reports
+          path: |
+            backend/target/surefire-reports/*.xml
+            backend/target/failsafe-reports/*.xml
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend checks (Node 24)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npm exec -- tsc --noEmit
+
+      - name: Run tests
+        working-directory: frontend
+        run: |
+          mkdir -p test-results
+          npm run test:run -- --reporter=default --reporter=junit --outputFile=./test-results/junit.xml
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload frontend test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-reports
+          path: frontend/test-results/junit.xml
+          if-no-files-found: ignore

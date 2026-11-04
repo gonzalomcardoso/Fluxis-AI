@@ -24,11 +24,11 @@ Abre la URL que muestra Vite (por defecto `http://localhost:5173`). El servidor 
 Desde `frontend/`:
 
 ```powershell
-npm run dev
-npm test
+npm ci
+npm run test:run
 npm run build
 npm run lint
-npx tsc --noEmit
+npm exec -- tsc --noEmit
 ```
 
 La aplicación ofrece el listado en `/oportunidades` y el formulario en `/oportunidades/nueva`.

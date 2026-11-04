@@ -1,11 +1,13 @@
 # Fluxis AI
 
+[![CI](https://github.com/gonzalomcardoso/Fluxis-AI/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/gonzalomcardoso/Fluxis-AI/actions/workflows/ci.yml)
+
 Professional productivity web platform: intelligent email management (Gmail), job search, lightweight CRM, services and proposals, subscriptions, and tasks, with AI that **proposes** and a user who **decides**.
 
 > **Core principle: AI proposes; the user decides.**
 > AI never sends emails, moves messages, or deletes information without explicit approval. Every approved action is validated and executed by the backend, and the interface marks it as complete only after server confirmation.
 
-**Status:** in development (30-day plan). Initially for personal use; the architecture is designed to evolve to support multiple users.
+**Status:** in development (30-day plan). Hito 1: [oportunidades laborales, pruebas y CI](docs/hito-1.md). Initially for personal use; the architecture is designed to evolve to support multiple users.
 
 ## Technology stack
 
@@ -38,8 +40,7 @@ fluxis-ai/
 
 ## Getting started
 
-- [ ] Day 4: start the frontend (`npm run dev`).
-- [ ] Day 5: run tests and CI.
+See [Hito 1](docs/hito-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
 
 Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend, or JDK 25 (Temurin) to run the backend outside Docker.
 
