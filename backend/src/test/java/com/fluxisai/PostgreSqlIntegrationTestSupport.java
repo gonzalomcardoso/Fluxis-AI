@@ -2,8 +2,10 @@ package com.fluxisai;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+@ActiveProfiles("test")
 public abstract class PostgreSqlIntegrationTestSupport {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");

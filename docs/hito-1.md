@@ -77,11 +77,11 @@ Invoke-RestMethod "http://localhost:8080/api/job-opportunities?page=0&size=10"
 Para comprobar la fila persistida directamente en PostgreSQL (con los valores predeterminados de `.env.example`):
 
 ```powershell
-docker compose exec postgres psql -U fluxis -d fluxis `
+docker compose exec postgres psql -U fluxis_dev -d fluxis_dev `
   -c "SELECT id, company_name, title, status FROM job_opportunities ORDER BY created_at DESC LIMIT 10;"
 ```
 
-Si cambiaste `POSTGRES_USER` o `POSTGRES_DB`, usa esos valores en el comando. Los ejemplos usan datos sintéticos; borra la oportunidad de prueba desde la base local si ya no la necesitas.
+Si cambiaste `POSTGRES_DEV_USER` o `POSTGRES_DEV_DB`, usa esos valores en el comando. Los ejemplos usan datos sintéticos; borra la oportunidad de prueba desde la base local si ya no la necesitas. Consulta [Ambientes dev y test](./environments.md) para el servicio manual de test y los procedimientos de reset sin afectar la otra base.
 
 ## Pruebas locales
 

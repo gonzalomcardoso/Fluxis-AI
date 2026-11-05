@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:${POSTGRES_TEST_PORT:5433}/${POSTGRES_TEST_DB:fluxis_test}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_TEST_USER:fluxis_test}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:local-test-only-not-secret}}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.springframework.security: WARN
