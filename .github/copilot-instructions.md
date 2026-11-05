@@ -24,6 +24,7 @@ The frontend owns presentation, forms, UX validation, loading/error states, and 
 - Use `main` for stable releases, `dev` for integration, and `feat/...`, `fix/...`, or `docs/...` work branches. Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`); see [ADR-0003](../docs/decisions/0003-git-workflow.md).
 - After a `feat/*` pull request is merged into `dev`, refresh the test backend artifact and Docker image from the integrated `dev` code, then recreate only `backend-test` and verify its health. Preserve `postgres-test` and its volume. The user executes all Git commands and branch switches; ask them to check out `dev` before building if needed. Do not treat opening an unmerged PR as integration.
 - Only the user may authorize creating, updating, or merging a pull request. Never open or manage a PR proactively. After the user confirms a `feat/*` PR has been merged into `dev`, perform the test-backend refresh described above.
+- After a `feat/*` pull request has been merged into `dev`, remind the user to delete both the remote and local feature branch, first switching to `dev`. The user executes all Git commands; provide safe commands such as `git push origin --delete <feature-branch>` and `git branch -d <feature-branch>` only after confirming the merge.
 
 ## Build, test, and lint
 
