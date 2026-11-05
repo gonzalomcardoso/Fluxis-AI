@@ -22,6 +22,13 @@ Ejecuta las pruebas unitarias del servicio y las pruebas web de `@WebMvcTest` si
 
 Ejecuta también las pruebas de integración `*IT` mediante Maven Failsafe. Estas usan un contenedor PostgreSQL 18 compartido durante la ejecución; no usan H2 ni requieren un servicio PostgreSQL adicional. La primera ejecución descarga las imágenes y dependencias necesarias.
 
+Para ejecutar explícitamente las pruebas bajo el perfil `test`:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "test"
+.\mvnw.cmd verify
+```
+
 ## Convención de pruebas
 
 - `*Test`: unitarias o de capa web; las ejecuta Maven Surefire durante `test`.

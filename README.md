@@ -41,6 +41,7 @@ fluxis-ai/
 ## Getting started
 
 See [Hito 1](docs/hito-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
+See [Ambientes dev y test](docs/environments.md) for the separate databases, profiles, and reset procedures.
 
 Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend, or JDK 25 (Temurin) to run the backend outside Docker.
 

@@ -1,15 +1,16 @@
 services:
   postgres:
+    container_name: postgres-dev
     image: postgres:18
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-fluxis}
-      POSTGRES_USER: ${POSTGRES_USER:-fluxis}
+      POSTGRES_DB: ${POSTGRES_DEV_DB:-fluxis_dev}
+      POSTGRES_USER: ${POSTGRES_DEV_USER:-fluxis_dev}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_DEV_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_dev_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
@@ -18,6 +19,8 @@ services:
       start_period: 5s
 
   backend:
+    image: fluxis-ai-backend:current
+    container_name: backend-dev
     build:
       context: ./backend
     restart: unless-stopped
@@ -25,9 +28,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-fluxis}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-fluxis}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DEV_DB:-fluxis_dev}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_DEV_USER:-fluxis_dev}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "127.0.0.1:${SERVER_PORT:-8080}:8080"
@@ -38,5 +43,51 @@ services:
       retries: 10
       start_period: 40s
 
+  postgres_test:
+    container_name: postgres-test
+    image: postgres:18
+    profiles:
+      - test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_TEST_DB:-fluxis_test}
+      POSTGRES_USER: ${POSTGRES_TEST_USER:-fluxis_test}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-5433}:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  backend_test:
+    image: fluxis-ai-backend:backup
+    container_name: backend-test
+    profiles:
+      - test
+    restart: unless-stopped
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: test,test-data
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_test:5432/${POSTGRES_TEST_DB:-fluxis_test}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_TEST_USER:-fluxis_test}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
 volumes:
-  postgres_data:
+  postgres_dev_data:
+  postgres_test_data:
