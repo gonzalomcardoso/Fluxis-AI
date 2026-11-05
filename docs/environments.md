@@ -9,7 +9,7 @@ Las ramas Git (`dev`, `test`) no seleccionan perfiles de ejecución. Spring usa 
 | Base manual Compose | `fluxis_dev` | `fluxis_test` |
 | PostgreSQL | Servicio Compose `postgres`, PostgreSQL 18 | Servicio Compose `postgres_test` o PostgreSQL efímero de Testcontainers |
 | API | `backend-dev` | `backend-test` (perfil Compose `test`) |
-| Imagen del backend | `fluxis-ai-backend:current` | `fluxis-ai-backend:backup` |
+| Imagen del backend (prueba actual) | `fluxis-ai-backend:feat-d6-a` | `fluxis-ai-backend:dev` |
 | Frontend local | Vite en `http://localhost:5173` → API `8080` | Vite en `http://localhost:5174` → API `8081` |
 | Puerto PostgreSQL local | `5432` | `5433` |
 | Volumen Compose | `postgres_dev_data` | `postgres_test_data` |
@@ -72,26 +72,41 @@ Invoke-RestMethod http://localhost:8081/actuator/health
 
 Esto inicia `postgres-test` en `5433` y `backend-test` en `8081`, conectados a `fluxis_test` mediante una red interna de Compose. La base tiene usuario y volumen propios, y reutiliza la contraseña local `POSTGRES_PASSWORD` de dev; las credenciales permanecen en `.env`, que no se debe compartir. El perfil `test-data` carga 120 oportunidades sintéticas en inglés para el usuario de pruebas. El seeder es idempotente y no se activa en las pruebas automatizadas de Testcontainers.
 
-Las imágenes `fluxis-ai-backend:current` y `fluxis-ai-backend:backup` contienen el backend actual; los JAR están guardados localmente como `backend/fluxis-ai-backend-current.jar` y `backend/fluxis-ai-backend-backup.jar` (ignorados por Git). Son idénticos al crear esta instantánea. Para actualizar solo dev, ejecuta desde la raíz:
+Para comparar la rama de trabajo y `dev`, los JAR están guardados localmente como `backend/fluxis-ai-backend-feat-d6-a.jar` y `backend/fluxis-ai-backend-dev.jar` (ignorados por Git). Sus imágenes Docker tienen etiquetas correspondientes: `fluxis-ai-backend:feat-d6-a` y `fluxis-ai-backend:dev`. En esta configuración, el ambiente Docker dev ejecuta `feat/d6-a`, mientras que el ambiente Docker test ejecuta el JAR de `dev`; cada uno mantiene su base de datos aislada. El JAR de `dev` se ejecuta con el perfil Spring `dev` también dentro del ambiente test porque esa versión no contiene un proveedor de identidad para el perfil `test`; sus propiedades de conexión apuntan explícitamente a `postgres-test`. La base test conserva sus 120 oportunidades asociadas a la identidad sintética de integración; como la identidad activa del JAR de dev es diferente, el listado API de ese ambiente puede aparecer vacío aunque haya registros en la base. Para reconstruir una etiqueta, sitúate en la rama deseada y construye explícitamente, evitando que Compose mezcle ramas.
+
+Desde `backend/`, para actualizar el artefacto de dev:
 
 ```powershell
-docker compose up -d --build backend
+.\mvnw.cmd clean package -DskipTests
+Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.jar
+docker build --tag fluxis-ai-backend:dev .
 ```
 
-Esto cambia la etiqueta `current`, mientras test sigue usando la imagen fija `backup`. Para guardar explícitamente la versión actual como nuevo backup y actualizar test:
+En la rama `feat/d6-a`, usa los nombres `fluxis-ai-backend-feat-d6-a.jar` y `fluxis-ai-backend:feat-d6-a`. Tras reconstruir una etiqueta, desde la raíz recrea el servicio asignado:
 
 ```powershell
-docker image tag fluxis-ai-backend:current fluxis-ai-backend:backup
+docker compose up -d backend
 docker compose --profile test up -d backend_test
 ```
 
-Los JAR locales no se actualizan automáticamente al reconstruir la imagen. Para exportar el JAR actual recién construido:
+### Actualizar test después de integrar un feature en dev
+
+Cuando un PR `feat/*` ya se haya integrado en `dev`, el usuario cambia a la rama `dev`. Desde `backend/`, compila el JAR y construye la imagen `dev` con el código integrado:
 
 ```powershell
-$container = docker create fluxis-ai-backend:current
-docker cp "${container}:/app/app.jar" .\backend\fluxis-ai-backend-current.jar
-docker rm $container
+.\mvnw.cmd clean package -DskipTests
+Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.jar -Force
+docker build --tag fluxis-ai-backend:dev .
 ```
+
+Desde la raíz, actualiza únicamente el backend del ambiente test y verifica su salud:
+
+```powershell
+docker compose --profile test up -d backend_test
+Invoke-RestMethod http://localhost:8081/actuator/health
+```
+
+Esto conserva `postgres-test` y sus datos. No basta con abrir el PR: `dev` debe contener el merge para que el artefacto incluya el feature integrado. Los comandos Git y los cambios de rama los ejecuta el usuario.
 
 En otra terminal, desde `frontend/`, inicia el segundo frontend:
 
