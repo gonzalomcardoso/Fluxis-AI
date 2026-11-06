@@ -7,7 +7,7 @@ Professional productivity web platform: intelligent email management (Gmail), jo
 > **Core principle: AI proposes; the user decides.**
 > AI never sends emails, moves messages, or deletes information without explicit approval. Every approved action is validated and executed by the backend, and the interface marks it as complete only after server confirmation.
 
-**Status:** in development (30-day plan). Hito 1: [oportunidades laborales, pruebas y CI](docs/hito-1.md). Initially for personal use; the architecture is designed to evolve to support multiple users.
+**Status:** in development (30-day plan). Milestone 1: [job opportunities, testing, and continuous integration](docs/milestone-1.md). Initially for personal use; the architecture is designed to evolve to support multiple users.
 
 ## Technology stack
 
@@ -40,8 +40,8 @@ fluxis-ai/
 
 ## Getting started
 
-See [Hito 1](docs/hito-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
-See [Ambientes dev y test](docs/environments.md) for the separate databases, profiles, and reset procedures.
+See [Milestone 1](docs/milestone-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
+See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures.
 
 Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend, or JDK 25 (Temurin) to run the backend outside Docker.
 

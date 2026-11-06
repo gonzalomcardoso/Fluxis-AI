@@ -1,13 +1,13 @@
-# Frontend de Fluxis AI
+# Fluxis AI Frontend
 
-## Requisitos
+## Requirements
 
-- Node.js 24 LTS (la versión mayor indicada en `.nvmrc`).
-- Backend y PostgreSQL disponibles mediante Docker Compose.
+- Node.js 24 LTS (the major version specified in `.nvmrc`).
+- Backend and PostgreSQL available through Docker Compose.
 
-## Arranque en desarrollo
+## Development
 
-Desde la raíz, copia `.env.example` a `.env` si todavía no lo has hecho. En `frontend/`, instala dependencias y arranca Vite:
+From the repository root, copy `.env.example` to `.env` if you have not already done so. From `frontend/`, install dependencies and start Vite:
 
 ```powershell
 cd frontend
@@ -15,13 +15,13 @@ npm install
 npm run dev
 ```
 
-Abre la URL que muestra Vite (por defecto `http://localhost:5173`). El servidor de desarrollo reenvía `/api` a `http://localhost:8080`; no hace falta habilitar CORS en el backend.
+Open the URL printed by Vite (default: `http://localhost:5173`). The development server forwards `/api` to `http://localhost:8080`; there is no need to enable CORS on the backend.
 
-`VITE_API_URL=/api` está documentada en el `.env.example` de la raíz y es el valor de desarrollo. Para otros entornos configura `VITE_API_URL` con la ruta base pública de la API, por ejemplo `https://api.example.com/api`. Las variables `VITE_*` se incluyen en el bundle del navegador y nunca deben contener secretos.
+`VITE_API_URL=/api` is documented in the root `.env.example` and is the development value. For other environments, set `VITE_API_URL` to the public API base path, for example `https://api.example.com/api`. `VITE_*` variables are included in the browser bundle and must never contain secrets.
 
-## Comprobaciones
+## Checks
 
-Desde `frontend/`:
+From `frontend/`:
 
 ```powershell
 npm ci
@@ -31,4 +31,4 @@ npm run lint
 npm exec -- tsc --noEmit
 ```
 
-La aplicación ofrece el listado en `/oportunidades` y el formulario en `/oportunidades/nueva`.
+The application provides the opportunity list at `/oportunidades` and the form at `/oportunidades/nueva`.

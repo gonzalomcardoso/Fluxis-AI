@@ -4,14 +4,17 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 import com.fluxisai.job.JobOpportunity;
 import com.fluxisai.job.JobOpportunityRepository;
 import com.fluxisai.job.JobStatus;
 import com.fluxisai.user.User;
 import com.fluxisai.user.UserRepository;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Component;
+import com.fluxisai.user.UserStatus;
 
 @Component
 @Profile("dev")
@@ -19,12 +22,18 @@ public class DevDataSeeder implements org.springframework.boot.CommandLineRunner
 
     private final UserRepository userRepository;
     private final JobOpportunityRepository jobOpportunityRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String seedPassword;
 
     public DevDataSeeder(
             UserRepository userRepository,
-            JobOpportunityRepository jobOpportunityRepository) {
+            JobOpportunityRepository jobOpportunityRepository,
+            PasswordEncoder passwordEncoder,
+            @Value("${app.dev.seed-password}") String seedPassword) {
         this.userRepository = userRepository;
         this.jobOpportunityRepository = jobOpportunityRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.seedPassword = seedPassword;
     }
 
     @Override
@@ -45,10 +54,16 @@ public class DevDataSeeder implements org.springframework.boot.CommandLineRunner
 
     private void seedUser(String email, String displayName, List<SeedOpportunity> opportunities) {
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseGet(() -> userRepository.save(new User(email, displayName)));
-        if (jobOpportunityRepository.findAllByUserId(user.getId(), Pageable.unpaged()).isEmpty()) {
+                .orElseGet(() -> userRepository.save(new User(
+                        email, displayName, passwordEncoder.encode(seedPassword))));
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            user.updateCredentials(passwordEncoder.encode(seedPassword), UserStatus.ACTIVE);
+            user = userRepository.save(user);
+        }
+        UUID userId = user.getId();
+        if (jobOpportunityRepository.findAllByUserId(userId, Pageable.unpaged()).isEmpty()) {
             opportunities.stream()
-                    .map(opportunity -> opportunity.toEntity(user.getId()))
+                    .map(opportunity -> opportunity.toEntity(userId))
                     .forEach(jobOpportunityRepository::save);
         }
     }

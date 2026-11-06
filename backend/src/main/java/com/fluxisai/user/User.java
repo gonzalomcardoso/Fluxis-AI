@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,6 +29,13 @@ public class User {
     @Column(name = "display_name", nullable = false, length = 200)
     private String displayName;
 
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserStatus status;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -36,9 +45,16 @@ public class User {
     protected User() {
     }
 
-    public User(String email, String displayName) {
+    public User(String email, String displayName, String passwordHash) {
         this.email = email;
         this.displayName = displayName;
+        this.passwordHash = passwordHash;
+        this.status = UserStatus.ACTIVE;
+    }
+
+    public void updateCredentials(String passwordHash, UserStatus status) {
+        this.passwordHash = passwordHash;
+        this.status = status;
     }
 
     @PrePersist
@@ -63,6 +79,14 @@ public class User {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public UserStatus getStatus() {
+        return status;
     }
 
     public OffsetDateTime getCreatedAt() {

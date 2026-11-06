@@ -1,37 +1,39 @@
 # Fluxis AI Backend
 
-## Requisitos
+## Requirements
 
 - JDK 25.
-- Docker disponible para las pruebas de integración con Testcontainers.
-- PostgreSQL local solo si se arranca la aplicación fuera de Docker.
+- Docker for integration tests with Testcontainers.
+- Local PostgreSQL only when running the application outside Docker.
 
-## Pruebas
+The backend uses the included Maven Wrapper; a global Maven installation is not required.
 
-Desde `backend/`, en PowerShell:
+## Tests
+
+From `backend/`, in PowerShell:
 
 ```powershell
 .\mvnw.cmd test
 ```
 
-Ejecuta las pruebas unitarias del servicio y las pruebas web de `@WebMvcTest` sin iniciar PostgreSQL.
+Runs service unit tests and `@WebMvcTest` web tests without starting PostgreSQL.
 
 ```powershell
 .\mvnw.cmd verify
 ```
 
-Ejecuta también las pruebas de integración `*IT` mediante Maven Failsafe. Estas usan un contenedor PostgreSQL 18 compartido durante la ejecución; no usan H2 ni requieren un servicio PostgreSQL adicional. La primera ejecución descarga las imágenes y dependencias necesarias.
+Also runs `*IT` integration tests through Maven Failsafe. These use a PostgreSQL 18 container shared during the test run; they do not use H2 or require an additional PostgreSQL service. The first run downloads the required images and dependencies.
 
-Para ejecutar explícitamente las pruebas bajo el perfil `test`:
+To explicitly run tests with the `test` profile:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE = "test"
 .\mvnw.cmd verify
 ```
 
-## Convención de pruebas
+## Test Naming Convention
 
-- `*Test`: unitarias o de capa web; las ejecuta Maven Surefire durante `test`.
-- `*IT`: integración con PostgreSQL real; la ejecuta Maven Failsafe durante `verify`.
+- `*Test`: unit or web-layer tests; Maven Surefire runs them during `test`.
+- `*IT`: integration tests with real PostgreSQL; Maven Failsafe runs them during `verify`.
 
-Las migraciones Flyway se aplican al arrancar cada contexto de integración sobre el contenedor de pruebas.
+Flyway migrations are applied when each integration-test context starts against the test container.

@@ -14,3 +14,5 @@ logging:
 app:
   cors:
     allowed-origin: ${APP_FRONTEND_URL:http://localhost:5173}
+  dev:
+    seed-password: ${DEV_SEED_PASSWORD:local-development-only-password}

@@ -1,30 +1,30 @@
-# Ambientes de desarrollo y pruebas
+# Development and Test Environments
 
-Las ramas Git (`dev`, `test`) no seleccionan perfiles de ejecución. Spring usa el perfil `dev` por defecto; para pruebas se selecciona `test`.
+Git branches (`dev`, `test`) do not select runtime profiles. Spring uses the `dev` profile by default; automated tests explicitly select `test`.
 
-## Comparación
+## Comparison
 
-| Propiedad | Desarrollo (`dev`) | Pruebas (`test`) |
+| Property | Development (`dev`) | Test (`test`) |
 |---|---|---|
-| Base manual Compose | `fluxis_dev` | `fluxis_test` |
-| PostgreSQL | Servicio Compose `postgres`, PostgreSQL 18 | Servicio Compose `postgres_test` o PostgreSQL efímero de Testcontainers |
-| API | `backend-dev` | `backend-test` (perfil Compose `test`) |
-| Imagen del backend (prueba actual) | `fluxis-ai-backend:feat-d6-a` | `fluxis-ai-backend:dev` |
-| Frontend local | Vite en `http://localhost:5173` → API `8080` | Vite en `http://localhost:5174` → API `8081` |
-| Puerto PostgreSQL local | `5432` | `5433` |
-| Volumen Compose | `postgres_dev_data` | `postgres_test_data` |
-| Perfil Spring | `dev` (predeterminado y explícito en Compose) | `test` |
-| Flyway | Activo | Activo; en tests automatizados aplica desde cero |
+| Manual Compose database | `fluxis_dev` | `fluxis_test` |
+| PostgreSQL | Compose service `postgres`, PostgreSQL 18 | Compose service `postgres_test` or ephemeral Testcontainers PostgreSQL |
+| API | `backend-dev` | `backend-test` (Compose `test` profile) |
+| Current backend image | `fluxis-ai-backend:feat-d6` | `fluxis-ai-backend:dev` |
+| Local frontend | Vite at `http://localhost:5173` → API `8080` | Vite at `http://localhost:5174` → API `8081` |
+| Local PostgreSQL port | `5432` | `5433` |
+| Compose volume | `postgres_dev_data` | `postgres_test_data` |
+| Spring profile | `dev` (default and explicit in Compose) | `dev` in the current manual instance; automated tests use `test` |
+| Flyway | Enabled | Enabled; automated tests apply migrations from scratch |
 | Hibernate | `validate` | `validate` |
-| Datos sintéticos | Seeder idempotente: dos usuarios con dos oportunidades cada uno | Seeder opcional `test-data`: 120 oportunidades sintéticas para pruebas manuales; identidad sintética para pruebas de API |
-| OpenAPI | Se habilitará al integrar la librería en el Paso D | Se habilitará al integrar la librería en el Paso D |
-| Servicios externos | Ninguno | Ninguno |
+| Synthetic data | Idempotent seeder: two users with two opportunities each | 120 existing synthetic opportunities; the dev backend connected to this database also seeds its two synthetic accounts |
+| OpenAPI | To be enabled when the library is added in Step D | To be enabled when the library is added in Step D |
+| External services | None | None |
 
-El archivo de Compose se conserva en la raíz (`compose.yaml`) para no romper los comandos existentes. `.env.example` contiene valores ficticios para pruebas manuales; `postgres-test` reutiliza `POSTGRES_PASSWORD`, mientras que base de datos, usuario, puerto y volumen permanecen separados.
+The Compose file remains at the repository root (`compose.yaml`) to preserve existing commands. `.env.example` contains placeholder values for manual testing. `postgres-test` reuses `POSTGRES_PASSWORD`, while its database, username, port, and volume remain separate.
 
-## Desarrollo local
+## Local Development
 
-Desde la raíz, después de copiar `.env.example` a `.env` y establecer `POSTGRES_PASSWORD`:
+From the repository root, copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`:
 
 ```powershell
 docker compose up -d --build
@@ -32,37 +32,37 @@ docker compose ps
 Invoke-RestMethod http://localhost:8080/actuator/health
 ```
 
-Compose fuerza `SPRING_PROFILES_ACTIVE=dev`. PostgreSQL escucha solo en `127.0.0.1:5432` y usa `fluxis_dev`. Para ejecutar el backend desde Maven en vez de Docker, deja PostgreSQL arriba y en `backend/` ejecuta:
+Compose sets `SPRING_PROFILES_ACTIVE=dev`. PostgreSQL listens only on `127.0.0.1:5432` and uses `fluxis_dev`. To run the backend with Maven instead of Docker, keep PostgreSQL running and execute the following from `backend/`:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE = "dev"
 .\mvnw.cmd spring-boot:run
 ```
 
-El perfil `dev` obtiene la contraseña de `POSTGRES_PASSWORD`. El CORS de `/api/**` permite únicamente el origen `APP_FRONTEND_URL` (por defecto `http://localhost:5173`). Los datos de demo son sintéticos y usan dominios reservados `.test`.
+The `dev` profile reads the database password from `POSTGRES_PASSWORD`. CORS for `/api/**` allows only the `APP_FRONTEND_URL` origin (default: `http://localhost:5173`). Local synthetic accounts use `DEV_SEED_PASSWORD` and store password hashes with BCrypt. Change the placeholder password in `.env`; it is not logged. Demo data uses reserved `.test` domains.
 
-En otra terminal, desde `frontend/`, inicia el frontend de desarrollo:
+In another terminal, start the development frontend from `frontend/`:
 
 ```powershell
 npm run dev
 ```
 
-Abre `http://localhost:5173`. El proxy de Vite dirige `/api` al backend dev en el puerto `8080`.
+Open `http://localhost:5173`. The Vite proxy forwards `/api` requests to the dev backend on port `8080`.
 
-## Pruebas automatizadas
+## Automated Tests
 
-Desde `backend/`, con Docker activo:
+From `backend/`, with Docker running:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE = "test"
 .\mvnw.cmd verify
 ```
 
-Las pruebas de integración usan Testcontainers y un PostgreSQL 18 efímero; no se conectan a `fluxis_dev` ni al servicio Compose opcional. Flyway ejecuta la migración desde cero en ese contenedor.
+Integration tests use Testcontainers and an ephemeral PostgreSQL 18 instance; they do not connect to `fluxis_dev` or the optional Compose service. Flyway applies migrations from scratch in that container.
 
-## Aplicaciones separadas para pruebas manuales
+## Separate Applications for Manual Testing
 
-Desde la raíz, inicia el backend y PostgreSQL aislados del ambiente de pruebas:
+From the repository root, start the test backend and PostgreSQL, isolated from the development environment:
 
 ```powershell
 docker compose --profile test up -d --build
@@ -70,11 +70,11 @@ docker compose --profile test ps
 Invoke-RestMethod http://localhost:8081/actuator/health
 ```
 
-Esto inicia `postgres-test` en `5433` y `backend-test` en `8081`, conectados a `fluxis_test` mediante una red interna de Compose. La base tiene usuario y volumen propios, y reutiliza la contraseña local `POSTGRES_PASSWORD` de dev; las credenciales permanecen en `.env`, que no se debe compartir. El perfil `test-data` carga 120 oportunidades sintéticas en inglés para el usuario de pruebas. El seeder es idempotente y no se activa en las pruebas automatizadas de Testcontainers.
+This starts `postgres-test` on port `5433` and `backend-test` on port `8081`, connected to `fluxis_test` over an internal Compose network. The database has its own username and volume, and reuses the local development `POSTGRES_PASSWORD`; credentials remain in `.env`, which must not be shared. The `test-data` profile loads 120 synthetic opportunities in English for the test user. Its seeder is idempotent and is not enabled in automated Testcontainers tests.
 
-Para comparar la rama de trabajo y `dev`, los JAR están guardados localmente como `backend/fluxis-ai-backend-feat-d6-a.jar` y `backend/fluxis-ai-backend-dev.jar` (ignorados por Git). Sus imágenes Docker tienen etiquetas correspondientes: `fluxis-ai-backend:feat-d6-a` y `fluxis-ai-backend:dev`. En esta configuración, el ambiente Docker dev ejecuta `feat/d6-a`, mientras que el ambiente Docker test ejecuta el JAR de `dev`; cada uno mantiene su base de datos aislada. El JAR de `dev` se ejecuta con el perfil Spring `dev` también dentro del ambiente test porque esa versión no contiene un proveedor de identidad para el perfil `test`; sus propiedades de conexión apuntan explícitamente a `postgres-test`. La base test conserva sus 120 oportunidades asociadas a la identidad sintética de integración; como la identidad activa del JAR de dev es diferente, el listado API de ese ambiente puede aparecer vacío aunque haya registros en la base. Para reconstruir una etiqueta, sitúate en la rama deseada y construye explícitamente, evitando que Compose mezcle ramas.
+To compare the working branch with `dev`, the JARs are stored locally as `backend/fluxis-ai-backend-feat-d6.jar` and `backend/fluxis-ai-backend-dev.jar` (ignored by Git). Their Docker images use the corresponding tags: `fluxis-ai-backend:feat-d6` and `fluxis-ai-backend:dev`. In this setup, the dev Docker environment runs `feat/d6`, while the test Docker environment runs the `dev` JAR; each has an isolated database. The test backend uses the Spring `dev` profile, with its connection properties explicitly pointing to `postgres-test`. Its seeder enables the synthetic accounts `dev@fluxis.local` and `demo@fluxis.local` with `DEV_SEED_PASSWORD`. The 120 historical opportunities for `integration@fluxis.local` remain associated with an account disabled by the migration and are not visible in those sessions. Routes under `/api/**` require authentication; request `GET /api/auth/csrf` and send the returned token in the specified header with every state-changing request. To rebuild an image tag, check out the intended branch and build it explicitly so Compose does not mix branches.
 
-Desde `backend/`, para actualizar el artefacto de dev:
+From `backend/`, build the dev artifact:
 
 ```powershell
 .\mvnw.cmd clean package -DskipTests
@@ -82,16 +82,16 @@ Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.
 docker build --tag fluxis-ai-backend:dev .
 ```
 
-En la rama `feat/d6-a`, usa los nombres `fluxis-ai-backend-feat-d6-a.jar` y `fluxis-ai-backend:feat-d6-a`. Tras reconstruir una etiqueta, desde la raíz recrea el servicio asignado:
+On branch `feat/d6`, use the names `fluxis-ai-backend-feat-d6.jar` and `fluxis-ai-backend:feat-d6`. After rebuilding an image tag, recreate its assigned service from the repository root:
 
 ```powershell
 docker compose up -d backend
 docker compose --profile test up -d backend_test
 ```
 
-### Actualizar test después de integrar un feature en dev
+### Updating Test After Merging a Feature into Dev
 
-Cuando un PR `feat/*` ya se haya integrado en `dev`, el usuario cambia a la rama `dev`. Desde `backend/`, compila el JAR y construye la imagen `dev` con el código integrado:
+After a `feat/*` PR has been merged into `dev`, the user switches to the `dev` branch. From `backend/`, build the JAR and `dev` image using the integrated code:
 
 ```powershell
 .\mvnw.cmd clean package -DskipTests
@@ -99,40 +99,40 @@ Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.
 docker build --tag fluxis-ai-backend:dev .
 ```
 
-Desde la raíz, actualiza únicamente el backend del ambiente test y verifica su salud:
+From the repository root, update only the test backend and verify its health:
 
 ```powershell
 docker compose --profile test up -d backend_test
 Invoke-RestMethod http://localhost:8081/actuator/health
 ```
 
-Esto conserva `postgres-test` y sus datos. No basta con abrir el PR: `dev` debe contener el merge para que el artefacto incluya el feature integrado. Los comandos Git y los cambios de rama los ejecuta el usuario.
+This preserves `postgres-test` and its data. Opening a PR is not enough: `dev` must contain the merge for the artifact to include the feature. The user runs all Git commands and switches branches.
 
-En otra terminal, desde `frontend/`, inicia el segundo frontend:
+In another terminal, start the second frontend from `frontend/`:
 
 ```powershell
 npm run dev:test
 ```
 
-Abre `http://localhost:5174`. El modo Vite `test` dirige `/api` al backend test en `8081`; el frontend dev en `5173` sigue apuntando a `8080`. Así puedes tener ambas aplicaciones abiertas a la vez sin compartir base de datos.
+Open `http://localhost:5174`. The Vite `test` mode forwards `/api` to the test backend on port `8081`; the dev frontend on port `5173` continues to use port `8080`. Both applications can be open at the same time without sharing a database.
 
-Detén solo los servicios Docker de test sin borrar sus datos:
+Stop only the test Docker services without deleting their data:
 
 ```powershell
 docker compose --profile test stop backend_test postgres_test
 ```
 
-Para recrear únicamente la base manual de test, primero detenla y elimina **solo** el volumen `postgres_test_data`. El nombre completo suele llevar el prefijo del proyecto Compose; compruébalo antes de borrarlo:
+To recreate only the manual test database, stop it first and delete **only** the `postgres_test_data` volume. The full name usually includes the Compose project prefix; inspect it before removing it:
 
 ```powershell
 docker volume ls --filter label=com.docker.compose.volume=postgres_test_data
-docker volume rm <nombre-exacto-del-volumen-de-test>
+docker volume rm <exact-test-volume-name>
 docker compose --profile test up -d postgres_test
 ```
 
-No uses `docker compose down -v` para resetear solo test: podría eliminar también el volumen de desarrollo. Para resetear dev, identifica de forma análoga y elimina únicamente el volumen `postgres_dev_data`; eso borra los datos locales de desarrollo.
+Do not use `docker compose down -v` to reset only test; it could also delete the development volume. To reset dev, identify and remove only the `postgres_dev_data` volume in the same way; this deletes local development data.
 
-## Verificar que las bases no se comparten
+## Verify the Databases Are Separate
 
 ```powershell
 docker compose ps
@@ -141,4 +141,4 @@ docker compose exec postgres psql -U fluxis_dev -d fluxis_dev -c "SELECT current
 docker compose --profile test exec postgres_test psql -U fluxis_test -d fluxis_test -c "SELECT current_database();"
 ```
 
-Los servicios, puertos y volúmenes son independientes. No se copian datos entre ambos ambientes.
+The services, ports, and volumes are independent. Data is not copied between the environments.
