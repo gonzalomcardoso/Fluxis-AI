@@ -9,3 +9,4 @@ Each significant technical decision is recorded here in an `NNNN-title.md` file 
 | [0003](0003-git-workflow.md) | Git Workflow | Accepted |
 | [0004](0004-frontend-stack.md) | Frontend Stack | Accepted |
 | [0005](0005-testing-strategy.md) | Testing Strategy | Accepted |
+| [0006](0006-session-cookie-authentication.md) | Session Cookie Authentication | Accepted |

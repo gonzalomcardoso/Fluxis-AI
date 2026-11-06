@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -27,16 +28,19 @@ class JobOpportunityRepositoryIT extends PostgreSqlIntegrationTestSupport {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void flywayAppliesVersionOneOnFreshPostgresDatabase() {
+    void flywayAppliesMigrationsOnFreshPostgresDatabase() {
         Integer appliedMigrations = jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM flyway_schema_history WHERE version = '1'", Integer.class);
+                "SELECT count(*) FROM flyway_schema_history WHERE version IN ('1', '2')", Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(1);
+        assertThat(appliedMigrations).isEqualTo(2);
     }
 
     @Test
     void savesAndQueriesOpportunityByUser() {
-        User user = userRepository.saveAndFlush(new User("test-user@fluxis.local", "Synthetic User"));
+        User user = userRepository.saveAndFlush(new User(
+                "test-user@fluxis.local",
+                "Synthetic User",
+                new BCryptPasswordEncoder().encode("synthetic-test-password")));
         JobOpportunity opportunity = jobOpportunityRepository.saveAndFlush(new JobOpportunity(
                 user.getId(),
                 "Example Company",

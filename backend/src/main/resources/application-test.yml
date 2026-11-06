@@ -10,3 +10,9 @@ spring:
 logging:
   level:
     org.springframework.security: WARN
+
+app:
+  cors:
+    allowed-origin: ${APP_FRONTEND_URL:http://localhost:5174}
+  test:
+    seed-password: ${TEST_SEED_PASSWORD:local-test-only-password}

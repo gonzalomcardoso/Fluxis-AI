@@ -10,10 +10,11 @@ The frontend owns presentation, forms, UX validation, loading/error states, and 
 
 ## Product and data constraints
 
+- Write all project documentation in English, including guides, architecture notes, and ADRs.
 - AI proposes; the user decides. Never send email, move messages, delete information, or perform another sensitive external action without explicit user approval. Approval must apply to a specific, idempotent action; the backend validates and executes it.
 - Scope every user's data access by `user_id`. Keep Google OAuth tokens in the backend, encrypted at rest; never put tokens or secrets in the repository or browser `localStorage`. Request only the Gmail scopes needed.
 - Treat email content as untrusted input, including in AI prompts.
-- Store all database content, including synthetic seed and test data, in English. Keep user display names, company names, titles, descriptions, requirements, and sources in English (for example, `Develop user`, not `Usuario de desarrollo`).
+- Store all database content, including synthetic seed and test data, in English. Keep user display names, company names, titles, descriptions, requirements, and sources in English (for example, `Develop user`).
 - Follow [data-model.md](../docs/data-model.md) when implementing persistence: use `NUMERIC` plus an explicit currency for money, time-zone-aware timestamps for instants, Gmail external IDs (not subjects) as relationship keys, constrained states, and appropriate foreign keys, uniqueness constraints, and indexes in the initial migration.
 
 ## Stack and repository conventions

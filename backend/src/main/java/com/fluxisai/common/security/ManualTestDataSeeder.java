@@ -10,11 +10,14 @@ import com.fluxisai.job.JobOpportunityRepository;
 import com.fluxisai.job.JobStatus;
 import com.fluxisai.user.User;
 import com.fluxisai.user.UserRepository;
+import com.fluxisai.user.UserStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,18 +43,29 @@ public class ManualTestDataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final JobOpportunityRepository jobOpportunityRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String seedPassword;
 
     public ManualTestDataSeeder(
             UserRepository userRepository,
-            JobOpportunityRepository jobOpportunityRepository) {
+            JobOpportunityRepository jobOpportunityRepository,
+            PasswordEncoder passwordEncoder,
+            @Value("${app.test.seed-password}") String seedPassword) {
         this.userRepository = userRepository;
         this.jobOpportunityRepository = jobOpportunityRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.seedPassword = seedPassword;
     }
 
     @Override
     public void run(String... args) {
         User user = userRepository.findByEmailIgnoreCase(TEST_EMAIL)
-                .orElseGet(() -> userRepository.save(new User(TEST_EMAIL, "Synthetic Integration User")));
+                .orElseGet(() -> userRepository.save(new User(
+                        TEST_EMAIL, "Synthetic Integration User", passwordEncoder.encode(seedPassword))));
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            user.updateCredentials(passwordEncoder.encode(seedPassword), UserStatus.ACTIVE);
+            user = userRepository.save(user);
+        }
         List<JobOpportunity> missingOpportunities = new ArrayList<>();
         JobStatus[] statuses = JobStatus.values();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
