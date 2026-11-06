@@ -7,3 +7,6 @@ Each significant technical decision is recorded here in an `NNNN-title.md` file 
 | [0001](0001-stack-versions.md) | Technology Stack Versions | Accepted |
 | [0002](0002-modular-monolith-and-python.md) | Modular Monolith and Python Policy | Accepted |
 | [0003](0003-git-workflow.md) | Git Workflow | Accepted |
+| [0004](0004-frontend-stack.md) | Frontend Stack | Accepted |
+| [0005](0005-testing-strategy.md) | Testing Strategy | Accepted |
+| [0006](0006-session-cookie-authentication.md) | Session Cookie Authentication | Accepted |

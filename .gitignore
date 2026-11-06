@@ -27,6 +27,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+test-results/
 *.tsbuildinfo
 npm-debug.log*
 yarn-error.log*
