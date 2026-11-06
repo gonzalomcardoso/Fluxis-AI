@@ -17,7 +17,7 @@ Git branches (`dev`, `test`) do not select runtime profiles. Spring uses the `de
 | Flyway | Enabled | Enabled; automated tests apply migrations from scratch |
 | Hibernate | `validate` | `validate` |
 | Synthetic data | Idempotent seeder: two users with two opportunities each | 120 existing synthetic opportunities; the dev backend connected to this database also seeds its two synthetic accounts |
-| OpenAPI | To be enabled when the library is added in Step D | To be enabled when the library is added in Step D |
+| OpenAPI | `/v3/api-docs` and `/swagger-ui/index.html` | `/v3/api-docs` and `/swagger-ui/index.html` |
 | External services | None | None |
 
 The Compose file remains at the repository root (`compose.yaml`) to preserve existing commands. `.env.example` contains placeholder values for manual testing. `postgres-test` reuses `POSTGRES_PASSWORD`, while its database, username, port, and volume remain separate.

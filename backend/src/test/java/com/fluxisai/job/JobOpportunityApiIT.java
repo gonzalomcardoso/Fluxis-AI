@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fluxisai.PostgreSqlIntegrationTestSupport;
 import com.fluxisai.auth.FluxisUserDetails;
@@ -42,20 +44,30 @@ class JobOpportunityApiIT extends PostgreSqlIntegrationTestSupport {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private final List<User> testUsers = new ArrayList<>();
     private User user;
 
     @BeforeEach
     void createUser() {
-        user = userRepository.saveAndFlush(new User(
+        user = createTestUser();
+    }
+
+    private User createTestUser() {
+        User testUser = userRepository.saveAndFlush(new User(
                 "api-it-" + UUID.randomUUID() + "@fluxis.local",
                 "Synthetic API Test User",
                 passwordEncoder.encode("synthetic-api-test-password")));
+        testUsers.add(testUser);
+        return testUser;
     }
 
     @AfterEach
     void cleanDatabase() {
-        jobOpportunityRepository.deleteAll();
-        userRepository.deleteAll();
+        testUsers.forEach(testUser -> {
+            jobOpportunityRepository.deleteByUserId(testUser.getId());
+            userRepository.delete(testUser);
+        });
+        testUsers.clear();
     }
 
     @Test
@@ -85,6 +97,8 @@ class JobOpportunityApiIT extends PostgreSqlIntegrationTestSupport {
         String location = created.getResponse().getHeader("Location");
         assertThat(location).isNotNull();
         String id = location.substring(location.lastIndexOf('/') + 1);
+        assertThat(jobOpportunityRepository.findByIdAndUserId(UUID.fromString(id), user.getId()))
+                .isPresent();
 
         mockMvc.perform(get("/api/job-opportunities/" + id).with(user(principal)))
                 .andExpect(status().isOk())
@@ -96,9 +110,49 @@ class JobOpportunityApiIT extends PostgreSqlIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(id))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
 
-        assertThat(jobOpportunityRepository.findAllByUserId(
-                user.getId(), org.springframework.data.domain.Pageable.unpaged()))
-                .hasSize(1);
+    @Test
+    void usersCannotReadAnotherUsersOpportunities() throws Exception {
+        User otherUser = createTestUser();
+        MvcResult created = mockMvc.perform(post("/api/job-opportunities")
+                        .with(user(FluxisUserDetails.from(user)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "companyName": "Private Company",
+                                  "title": "Private Opportunity",
+                                  "url": "https://jobs.example.test/private",
+                                  "status": "PENDING"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String location = created.getResponse().getHeader("Location");
+        assertThat(location).isNotNull();
+        String id = location.substring(location.lastIndexOf('/') + 1);
+
+        mockMvc.perform(get("/api/job-opportunities/" + id)
+                        .with(user(FluxisUserDetails.from(otherUser))))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/job-opportunities")
+                        .with(user(FluxisUserDetails.from(otherUser))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void openApiSpecificationIsPublicAndDescribesJobOpportunityEndpoints() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.info.title").value("Fluxis AI API"))
+                .andExpect(jsonPath("$.paths['/api/job-opportunities']").exists())
+                .andExpect(jsonPath("$.paths['/api/auth/logout'].post").exists())
+                .andExpect(jsonPath("$.components.securitySchemes.sessionCookie.name").value("JSESSIONID"));
+
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk());
     }
 }

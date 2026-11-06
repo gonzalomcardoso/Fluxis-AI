@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import com.jayway.jsonpath.JsonPath;
 import com.fluxisai.PostgreSqlIntegrationTestSupport;
 import com.fluxisai.user.User;
 import com.fluxisai.user.UserRepository;
@@ -83,6 +84,9 @@ class AuthApiIT extends PostgreSqlIntegrationTestSupport {
         mockMvc.perform(get("/api/auth/me").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email));
+
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -98,6 +102,31 @@ class AuthApiIT extends PostgreSqlIntegrationTestSupport {
                                 """.formatted(email)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.title").value("No autenticado"));
+    }
+
+    @Test
+    void csrfBootstrapTokenCanAuthorizeRegistration() throws Exception {
+        MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.headerName").value("X-CSRF-TOKEN"))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) csrfResult.getRequest().getSession(false);
+        assertThat(session).isNotNull();
+        String csrfToken = JsonPath.read(csrfResult.getResponse().getContentAsString(), "$.token");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .session(session)
+                        .header("X-CSRF-TOKEN", csrfToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "displayName": "Synthetic Auth Test User",
+                                  "password": "synthetic-password-123"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value(email));
     }
 
     @Test
