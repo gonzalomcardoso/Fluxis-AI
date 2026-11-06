@@ -142,3 +142,42 @@ docker compose --profile test exec postgres_test psql -U fluxis_test -d fluxis_t
 ```
 
 The services, ports, and volumes are independent. Data is not copied between the environments.
+
+## Legacy `dev` Checkout: `env-dev` and `env-test`
+
+The separate checkout at `C:\Users\pudre\Documents\GitHub\test\Fluxis-AI` can run its `dev` branch against the existing development and test databases without replacing the main checkout's containers.
+
+| Environment | Backend image/container | Frontend | API | Database |
+|---|---|---|---|---|
+| `env-dev` | `fluxis-ai-backend:env-dev` / `env-dev` | `http://localhost:5173` | `http://localhost:8083` | `fluxis_dev`, via `postgres-dev:5432` (host port `5432`) |
+| `env-test` | `fluxis-ai-backend:env-test` / `env-test` | `http://localhost:5174` | `http://localhost:8082` | `fluxis_test`, via `postgres-test:5432` (host port `5433`) |
+
+Both backend containers join the existing `fluxis-ai_default` Docker network. Container-to-container JDBC uses PostgreSQL's internal port `5432`; `5433` is the host port published for `postgres-test`. The frontend Vite proxy uses the matching API port for each mode.
+
+Build each image from this checkout's backend source, from `backend/`:
+
+```powershell
+.\mvnw.cmd clean package -DskipTests
+Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-env-dev.jar -Force
+docker build --file .\Dockerfile.env-dev --tag fluxis-ai-backend:env-dev .
+
+Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-env-test.jar -Force
+docker build --file .\Dockerfile.jar --tag fluxis-ai-backend:env-test .
+```
+
+From the checkout root, provide the main repository's `.env` for database credentials and start either or both backends:
+
+```powershell
+$envFile = "C:\Users\pudre\Documents\GitHub\Fluxis-AI\.env"
+docker compose --project-name fluxis-env-dev --env-file $envFile --file .\compose.env-dev.yaml up -d
+docker compose --project-name fluxis-env-test --env-file $envFile --file .\compose.env-test.yaml up -d
+```
+
+Start the matching frontend from `frontend/`:
+
+```powershell
+npm run dev
+npm run dev:test
+```
+
+The dev and test API images remain separate (`env-dev` and `env-test`), while both use their corresponding existing database. Do not run `docker compose down -v`; it can remove volumes belonging to the other environments.
