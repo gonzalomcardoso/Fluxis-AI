@@ -1,144 +1,105 @@
-# Development and Test Environments
+# Local Environments
 
-Git branches (`dev`, `test`) do not select runtime profiles. Spring uses the `dev` profile by default; automated tests explicitly select `test`.
+Each local environment has its own Compose file, variable file, project, network, database credential, and persistent database volume.
 
-## Comparison
+| Environment | Compose file | Local env file | Backend URLs | PostgreSQL volume |
+|---|---|---|---|---|
+| DEV | `compose.dev.yaml` | `.env.dev` | `8083` | `fluxis-ai_postgres_dev_data` |
+| TEST | `compose.test.yaml` | `.env.test` | `8082` | `fluxis-ai_postgres_test_data` |
+| PROD | `compose.prod.yaml` | `.env.prod` | `8084` | `fluxis-ai_postgres_prod_data` |
 
-| Property | Development (`dev`) | Test (`test`) |
-|---|---|---|
-| Manual Compose database | `fluxis_dev` | `fluxis_test` |
-| PostgreSQL | Compose service `postgres`, PostgreSQL 18 | Compose service `postgres_test` or ephemeral Testcontainers PostgreSQL |
-| API | `backend-dev` | `backend-test` (Compose `test` profile) |
-| Current backend image | `fluxis-ai-backend:feat-d6` | `fluxis-ai-backend:dev` |
-| Local frontend | Vite at `http://localhost:5173` → API `8080` | Vite at `http://localhost:5174` → API `8081` |
-| Local PostgreSQL port | `5432` | `5433` |
-| Compose volume | `postgres_dev_data` | `postgres_test_data` |
-| Spring profile | `dev` (default and explicit in Compose) | `dev` in the current manual instance; automated tests use `test` |
-| Flyway | Enabled | Enabled; automated tests apply migrations from scratch |
-| Hibernate | `validate` | `validate` |
-| Synthetic data | Idempotent seeder: two users with two opportunities each | 120 existing synthetic opportunities; the dev backend connected to this database also seeds its two synthetic accounts |
-| OpenAPI | `/v3/api-docs` and `/swagger-ui/index.html` | `/v3/api-docs` and `/swagger-ui/index.html` |
-| External services | None | None |
+The Compose files are self-contained and use separate Docker networks. They retain the existing named database volumes so recreating a container does not remove its data. Do not use `docker compose down -v` or `docker volume rm` when switching configurations.
 
-The Compose file remains at the repository root (`compose.yaml`) to preserve existing commands. `.env.example` contains placeholder values for manual testing. `postgres-test` reuses `POSTGRES_PASSWORD`, while its database, username, port, and volume remain separate.
+## One-Time Local Setup
 
-## Local Development
-
-From the repository root, copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`:
+Run these commands from the configuration checkout root, or replace `.` with the absolute path to that root:
 
 ```powershell
-docker compose up -d --build
-docker compose ps
-Invoke-RestMethod http://localhost:8080/actuator/health
+Copy-Item .env.dev.example .env.dev
+Copy-Item .env.test.example .env.test
+Copy-Item .env.prod.example .env.prod
 ```
 
-Compose sets `SPRING_PROFILES_ACTIVE=dev`. PostgreSQL listens only on `127.0.0.1:5432` and uses `fluxis_dev`. To run the backend with Maven instead of Docker, keep PostgreSQL running and execute the following from `backend/`:
+Edit each new env file locally and replace the placeholder values. Never commit the `.env.dev`, `.env.test`, or `.env.prod` files. They are ignored by Git; the `.env.*.example` templates are safe to commit.
+
+For databases that already contain data, each `POSTGRES_*_PASSWORD` value must match the password currently stored for that database role. Changing an env file does not rotate a PostgreSQL role password. If rotating a role, use an interactive `psql` `\password <role>` command before recreating its backend. Use separate values for DEV, TEST, and PROD when rotating credentials.
+
+The PowerShell profile can point to the configuration root so Compose works from any current directory:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE = "dev"
-.\mvnw.cmd spring-boot:run
+$composeRoot = $prodRoot
+$devEnvFile = Join-Path $composeRoot ".env.dev"
+$testEnvFile = Join-Path $composeRoot ".env.test"
+$prodEnvFile = Join-Path $composeRoot ".env.prod"
+$devComposeFile = Join-Path $composeRoot "compose.dev.yaml"
+$testComposeFile = Join-Path $composeRoot "compose.test.yaml"
+$prodComposeFile = Join-Path $composeRoot "compose.prod.yaml"
 ```
 
-The `dev` profile reads the database password from `POSTGRES_PASSWORD`. CORS for `/api/**` allows only the `APP_FRONTEND_URL` origin (default: `http://localhost:5173`). Local synthetic accounts use `DEV_SEED_PASSWORD` and store password hashes with BCrypt. Change the placeholder password in `.env`; it is not logged. Demo data uses reserved `.test` domains.
-
-In another terminal, start the development frontend from `frontend/`:
+Build the dev and test backend images from the checkouts containing the code you want to run. The profile's `$devRoot` and `$testRoot` variables point to those checkouts:
 
 ```powershell
-npm run dev
+Push-Location (Join-Path $devRoot "backend")
+docker build --file Dockerfile --tag fluxis-ai-backend:env-dev .
+Pop-Location
+
+Push-Location (Join-Path $testRoot "backend")
+docker build --file Dockerfile --tag fluxis-ai-backend:env-test .
+Pop-Location
 ```
 
-Open `http://localhost:5173`. The Vite proxy forwards `/api` requests to the dev backend on port `8080`.
+The PROD Compose file builds its backend from the centralized configuration checkout.
 
-## Automated Tests
+## Validate and Start an Environment
 
-From `backend/`, with Docker running:
+`config --quiet` validates interpolation and the Compose model without starting or changing containers:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE = "test"
-.\mvnw.cmd verify
+docker compose --env-file $devEnvFile --file $devComposeFile config --quiet
+docker compose --env-file $testEnvFile --file $testComposeFile config --quiet
+docker compose --env-file $prodEnvFile --file $prodComposeFile config --quiet
 ```
 
-Integration tests use Testcontainers and an ephemeral PostgreSQL 18 instance; they do not connect to `fluxis_dev` or the optional Compose service. Flyway applies migrations from scratch in that container.
-
-## Separate Applications for Manual Testing
-
-From the repository root, start the test backend and PostgreSQL, isolated from the development environment:
+Start only the environment you want:
 
 ```powershell
-docker compose --profile test up -d --build
-docker compose --profile test ps
-Invoke-RestMethod http://localhost:8081/actuator/health
+docker compose --env-file $devEnvFile --file $devComposeFile up -d
+docker compose --env-file $testEnvFile --file $testComposeFile up -d
+docker compose --env-file $prodEnvFile --file $prodComposeFile up -d --build
 ```
 
-This starts `postgres-test` on port `5433` and `backend-test` on port `8081`, connected to `fluxis_test` over an internal Compose network. The database has its own username and volume, and reuses the local development `POSTGRES_PASSWORD`; credentials remain in `.env`, which must not be shared. The `test-data` profile loads 120 synthetic opportunities in English for the test user. Its seeder is idempotent and is not enabled in automated Testcontainers tests.
+The dev and test Compose files run the image tags built above and do not build those images themselves.
 
-To compare the working branch with `dev`, the JARs are stored locally as `backend/fluxis-ai-backend-feat-d6.jar` and `backend/fluxis-ai-backend-dev.jar` (ignored by Git). Their Docker images use the corresponding tags: `fluxis-ai-backend:feat-d6` and `fluxis-ai-backend:dev`. In this setup, the dev Docker environment runs `feat/d6`, while the test Docker environment runs the `dev` JAR; each has an isolated database. The test backend uses the Spring `dev` profile, with its connection properties explicitly pointing to `postgres-test`. Its seeder enables the synthetic accounts `dev@fluxis.local` and `demo@fluxis.local` with `DEV_SEED_PASSWORD`. The 120 historical opportunities for `integration@fluxis.local` remain associated with an account disabled by the migration and are not visible in those sessions. Routes under `/api/**` require authentication; request `GET /api/auth/csrf` and send the returned token in the specified header with every state-changing request. To rebuild an image tag, check out the intended branch and build it explicitly so Compose does not mix branches.
-
-From `backend/`, build the dev artifact:
+Check health:
 
 ```powershell
-.\mvnw.cmd clean package -DskipTests
-Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.jar
-docker build --tag fluxis-ai-backend:dev .
+Invoke-RestMethod http://localhost:8082/actuator/health
+Invoke-RestMethod http://localhost:8083/actuator/health
+Invoke-RestMethod http://localhost:8084/actuator/health
 ```
 
-On branch `feat/d6`, use the names `fluxis-ai-backend-feat-d6.jar` and `fluxis-ai-backend:feat-d6`. After rebuilding an image tag, recreate its assigned service from the repository root:
+Dev frontend: run `npm run dev` from `frontend/`; it proxies to port `8083`.
+Test frontend: run `npm run dev:test` from `frontend/`; it proxies to port `8082`.
+PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8084`.
+
+Automated backend integration tests use Testcontainers and an ephemeral PostgreSQL instance; they do not connect to these manual Compose databases. Run `.\mvnw.cmd verify` from `backend/`.
+
+After starting an environment, wait for its backend health check to pass before testing the frontend.
+
+If a backend fails with `password authentication failed`, stop there: verify that its env file contains the password matching the PostgreSQL role. Do not delete the database volume to fix a credential mismatch.
+
+## Environment Data and Security
+
+DEV and TEST run synthetic local accounts and data; PROD disables public registration and synthetic seeders. The PROD database is separate and should contain only data created through the application. PostgreSQL ports for DEV and TEST bind to loopback; PROD PostgreSQL has no published host port.
+
+The local PROD simulation uses HTTP and defaults `SESSION_COOKIE_SECURE=false`. Real deployments must use HTTPS and set `SESSION_COOKIE_SECURE=true`. The application has no role model; its single bootstrapped account is not an enforced role-based admin.
+
+To bootstrap the initial PROD account, reset its password, or verify a password against the existing hash, use the interactive commands below from the configuration checkout root. They use `.env.prod` and do not expose the password in command history. Use `--project-name fluxis-env-prod` so the one-off command joins the PROD Compose network and can resolve `postgres_prod`. `--build` includes the current backend source, including the one-off command:
 
 ```powershell
-docker compose up -d backend
-docker compose --profile test up -d backend_test
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --server.port=0
 ```
 
-### Updating Test After Merging a Feature into Dev
-
-After a `feat/*` PR has been merged into `dev`, the user switches to the `dev` branch. From `backend/`, build the JAR and `dev` image using the integrated code:
-
-```powershell
-.\mvnw.cmd clean package -DskipTests
-Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-dev.jar -Force
-docker build --tag fluxis-ai-backend:dev .
-```
-
-From the repository root, update only the test backend and verify its health:
-
-```powershell
-docker compose --profile test up -d backend_test
-Invoke-RestMethod http://localhost:8081/actuator/health
-```
-
-This preserves `postgres-test` and its data. Opening a PR is not enough: `dev` must contain the merge for the artifact to include the feature. The user runs all Git commands and switches branches.
-
-In another terminal, start the second frontend from `frontend/`:
-
-```powershell
-npm run dev:test
-```
-
-Open `http://localhost:5174`. The Vite `test` mode forwards `/api` to the test backend on port `8081`; the dev frontend on port `5173` continues to use port `8080`. Both applications can be open at the same time without sharing a database.
-
-Stop only the test Docker services without deleting their data:
-
-```powershell
-docker compose --profile test stop backend_test postgres_test
-```
-
-To recreate only the manual test database, stop it first and delete **only** the `postgres_test_data` volume. The full name usually includes the Compose project prefix; inspect it before removing it:
-
-```powershell
-docker volume ls --filter label=com.docker.compose.volume=postgres_test_data
-docker volume rm <exact-test-volume-name>
-docker compose --profile test up -d postgres_test
-```
-
-Do not use `docker compose down -v` to reset only test; it could also delete the development volume. To reset dev, identify and remove only the `postgres_dev_data` volume in the same way; this deletes local development data.
-
-## Verify the Databases Are Separate
-
-```powershell
-docker compose ps
-docker compose --profile test ps
-docker compose exec postgres psql -U fluxis_dev -d fluxis_dev -c "SELECT current_database();"
-docker compose --profile test exec postgres_test psql -U fluxis_test -d fluxis_test -c "SELECT current_database();"
-```
-
-The services, ports, and volumes are independent. Data is not copied between the environments.
+Bootstrap is only for an empty users table. Reset and check require exactly one account; password check is read-only. Do not run bootstrap again after the account exists.

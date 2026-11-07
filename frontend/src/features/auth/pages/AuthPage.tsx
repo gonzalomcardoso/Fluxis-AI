@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/auth-context'
 
 export function AuthPage() {
   const { login, register } = useAuth()
+  const registrationEnabled = import.meta.env.MODE !== 'prod'
   const [isRegistering, setIsRegistering] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -97,19 +98,21 @@ export function AuthPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          {isRegistering ? es.auth.hasAccount : es.auth.noAccount}{' '}
-          <button
-            className="font-semibold text-indigo-700 hover:text-indigo-900"
-            onClick={() => {
-              setIsRegistering(!isRegistering)
-              setError(null)
-            }}
-            type="button"
-          >
-            {isRegistering ? es.auth.loginAction : es.auth.registerAction}
-          </button>
-        </p>
+        {registrationEnabled && (
+          <p className="mt-6 text-center text-sm text-slate-600">
+            {isRegistering ? es.auth.hasAccount : es.auth.noAccount}{' '}
+            <button
+              className="font-semibold text-indigo-700 hover:text-indigo-900"
+              onClick={() => {
+                setIsRegistering(!isRegistering)
+                setError(null)
+              }}
+              type="button"
+            >
+              {isRegistering ? es.auth.loginAction : es.auth.registerAction}
+            </button>
+          </p>
+        )}
       </section>
     </main>
   )

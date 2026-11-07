@@ -1,0 +1,11 @@
+app:
+  auth:
+    registration-enabled: false
+  cors:
+    allowed-origins: ${APP_FRONTEND_URL:http://localhost:5175},http://127.0.0.1:5175
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${SESSION_COOKIE_SECURE:true}

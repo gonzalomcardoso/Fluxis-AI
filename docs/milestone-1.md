@@ -20,17 +20,23 @@ From PowerShell:
 ```powershell
 git clone https://github.com/gonzalomcardoso/Fluxis-AI.git
 cd Fluxis-AI
-Copy-Item .env.example .env
+Copy-Item .env.dev.example .env.dev
 ```
 
-Edit `.env` and replace `POSTGRES_PASSWORD` with a unique local password. Do not share or commit `.env`; Git ignores this file. `VITE_*` variables are public and must not contain secrets.
+Edit `.env.dev` and replace `POSTGRES_DEV_PASSWORD` with a unique local password. Do not share or commit `.env.dev`; Git ignores this file. `VITE_*` variables are public and must not contain secrets.
 
-Start PostgreSQL and the backend:
+Build the `env-dev` image from `backend/`:
 
 ```powershell
-docker compose up -d --build
-docker compose ps
-Invoke-RestMethod http://localhost:8080/actuator/health
+docker build --file .\backend\Dockerfile --tag fluxis-ai-backend:env-dev .\backend
+```
+
+From the repository root, start PostgreSQL and the backend:
+
+```powershell
+docker compose --env-file .env.dev --file compose.dev.yaml up -d
+docker compose --env-file .env.dev --file compose.dev.yaml ps
+Invoke-RestMethod http://localhost:8083/actuator/health
 ```
 
 Wait until both services are healthy before continuing.
@@ -45,18 +51,18 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite, usually `http://localhost:5173`. The development proxy forwards `/api` to the backend at `localhost:8080`.
+Open the URL printed by Vite, usually `http://localhost:5173`. The development proxy forwards `/api` to the backend at `localhost:8083`.
 
 ### 3. Create and Verify an Opportunity
 
 Sign in with the local synthetic account `dev@fluxis.local` and the password configured by `DEV_SEED_PASSWORD`. Open the opportunity creation form, enter a company and job title, and save. The opportunity should appear in the list. Reload the page to confirm it is retrieved from the backend.
 
-The API can also be exercised from PowerShell. The example uses the dev seed account; set `DEV_SEED_PASSWORD` in the shell to the same value configured in `.env`:
+The API can also be exercised from PowerShell. The example uses the dev seed account; set `DEV_SEED_PASSWORD` in the shell to the same value configured in `.env.dev`:
 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $csrf = Invoke-RestMethod `
-  -Uri http://localhost:8080/api/auth/csrf `
+  -Uri http://localhost:8083/api/auth/csrf `
   -WebSession $session
 $headers = @{}
 $headers[$csrf.headerName] = $csrf.token
@@ -68,7 +74,7 @@ $login = @{
 
 Invoke-RestMethod `
   -Method Post `
-  -Uri http://localhost:8080/api/auth/login `
+  -Uri http://localhost:8083/api/auth/login `
   -WebSession $session `
   -Headers $headers `
   -ContentType "application/json" `
@@ -85,7 +91,7 @@ $body = @{
 
 $created = Invoke-RestMethod `
   -Method Post `
-  -Uri http://localhost:8080/api/job-opportunities `
+  -Uri http://localhost:8083/api/job-opportunities `
   -WebSession $session `
   -Headers $headers `
   -ContentType "application/json" `
@@ -93,21 +99,21 @@ $created = Invoke-RestMethod `
 
 $created
 Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/job-opportunities/$($created.id)" `
+  -Uri "http://localhost:8083/api/job-opportunities/$($created.id)" `
   -WebSession $session
 Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/job-opportunities?page=0&size=10" `
+  -Uri "http://localhost:8083/api/job-opportunities?page=0&size=10" `
   -WebSession $session
 ```
 
-To verify the persisted row directly in PostgreSQL (using the default values from `.env.example`):
+To verify the persisted row directly in PostgreSQL (using the default dev database values):
 
 ```powershell
-docker compose exec postgres psql -U fluxis_dev -d fluxis_dev `
+docker compose --env-file .env.dev --file compose.dev.yaml exec postgres psql -U fluxis_dev -d fluxis_dev `
   -c "SELECT id, company_name, title, status FROM job_opportunities ORDER BY created_at DESC LIMIT 10;"
 ```
 
-If you changed `POSTGRES_DEV_USER` or `POSTGRES_DEV_DB`, use those values in the command. The examples create synthetic data; remove the test opportunity from the local database if it is no longer needed. See [Development and Test Environments](./environments.md) for the manual test service and reset procedures that do not affect the other database.
+If you changed `POSTGRES_DEV_USER` or `POSTGRES_DEV_DB`, use those values in the command. The examples create synthetic data; remove the test opportunity from the local database if it is no longer needed. See [Local Environments](./environments.md) for the manual test service and reset procedures that do not affect the other database.
 
 ## Local Tests
 
