@@ -84,19 +84,7 @@ PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8084
 
 Automated backend integration tests use Testcontainers and an ephemeral PostgreSQL instance; they do not connect to these manual Compose databases. Run `.\mvnw.cmd verify` from `backend/`.
 
-## Safely Moving Existing Containers to the Separate Files
-
-The older `compose.yaml`, `compose.env-dev.yaml`, and `compose.env-test.yaml` files are retained during migration. The existing containers use fixed names, so do not start a new file for an environment while its old containers with the same names still exist. Migrate one environment at a time and expect a brief outage for that environment.
-
-Stop and remove only that environment's old containers before starting its new Compose file:
-
-| Environment | Old containers to stop/remove |
-|---|---|
-| DEV | `backend-dev`, `env-dev`, `postgres-dev` |
-| TEST | `backend-test`, `env-test`, `postgres-test` |
-| PROD | `env-prod`, `postgres-prod` |
-
-Removing a stopped container by name does not remove the named database volume. Do not add `-v` to a removal command. The new Compose files explicitly reuse the three existing volume names shown in the table above. After starting an environment, wait for its backend health check to pass before testing the frontend.
+After starting an environment, wait for its backend health check to pass before testing the frontend.
 
 If a backend fails with `password authentication failed`, stop there: verify that its env file contains the password matching the PostgreSQL role. Do not delete the database volume to fix a credential mismatch.
 
@@ -106,12 +94,12 @@ DEV and TEST run synthetic local accounts and data; PROD disables public registr
 
 The local PROD simulation uses HTTP and defaults `SESSION_COOKIE_SECURE=false`. Real deployments must use HTTPS and set `SESSION_COOKIE_SECURE=true`. The application has no role model; its single bootstrapped account is not an enforced role-based admin.
 
-To bootstrap the initial PROD account, reset its password, or verify a password against the existing hash, use the interactive commands below from the configuration checkout root. They use `.env.prod` and do not expose the password in command history. While the existing PROD containers are still on the legacy `fluxis-ai_default` network, use `--project-name fluxis-ai` so the one-off command joins that same network and can resolve `postgres_prod`. `--build` includes the current backend source, including the one-off command:
+To bootstrap the initial PROD account, reset its password, or verify a password against the existing hash, use the interactive commands below from the configuration checkout root. They use `.env.prod` and do not expose the password in command history. Use `--project-name fluxis-env-prod` so the one-off command joins the PROD Compose network and can resolve `postgres_prod`. `--build` includes the current backend source, including the one-off command:
 
 ```powershell
-docker compose --project-name fluxis-ai --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --server.port=0
-docker compose --project-name fluxis-ai --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --server.port=0
-docker compose --project-name fluxis-ai --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --server.port=0
 ```
 
 Bootstrap is only for an empty users table. Reset and check require exactly one account; password check is read-only. Do not run bootstrap again after the account exists.

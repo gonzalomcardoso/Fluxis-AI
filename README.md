@@ -69,7 +69,7 @@ On Windows PowerShell, check the endpoint with:
 Invoke-RestMethod http://localhost:8083/actuator/health
 ```
 
-The development database settings are in `.env.dev`. See [Local Environments](docs/environments.md) for DEV/TEST image builds, the PROD environment, and safe migration from the legacy Compose files.
+The development database settings are in `.env.dev`. See [Local Environments](docs/environments.md) for DEV/TEST image builds and configuration for all three environments.
 
 ## Security
 
