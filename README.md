@@ -26,7 +26,9 @@ Exact versions and rationale: [ADR-0001](docs/decisions/0001-stack-versions.md).
 ```
 fluxis-ai/
 ├── backend/            # Spring Boot (modular monolith)
-├── compose.yaml        # PostgreSQL 18 and backend services
+├── compose.dev.yaml    # Isolated development environment
+├── compose.test.yaml   # Isolated manual test environment
+├── compose.prod.yaml   # Isolated local PROD environment
 ├── frontend/           # React + TypeScript + Vite
 ├── docs/
 │   ├── architecture.md
@@ -34,7 +36,9 @@ fluxis-ai/
 │   ├── roadmap.md      # 30-day plan
 │   └── decisions/      # ADRs: technical decision records
 ├── .github/workflows/  # CI (day 5)
-├── .env.example        # environment variable template
+├── .env.dev.example
+├── .env.test.example
+├── .env.prod.example
 └── README.md
 ```
 
@@ -43,34 +47,29 @@ fluxis-ai/
 See [Milestone 1](docs/milestone-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
 See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures.
 
-Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend, or JDK 25 (Temurin) to run the backend outside Docker.
+Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend; JDK 25 (Temurin) is needed for local Maven builds and tests.
 
 ```bash
-cp .env.example .env   # Fill in the values; never commit .env to Git
-docker compose up --build -d
+cp .env.dev.example .env.dev   # Fill in local values; never commit .env files
+docker build --file backend/Dockerfile --tag fluxis-ai-backend:env-dev backend
+docker compose --env-file .env.dev --file compose.dev.yaml up -d
 ```
 
-Compose starts PostgreSQL 18 and the Spring Boot backend. The backend waits for PostgreSQL's health check before starting, and its own health check calls `/actuator/health`:
+The Compose file starts PostgreSQL and the backend. Check the backend health:
 
 ```bash
-docker compose ps
-curl http://localhost:8080/actuator/health
+docker compose --env-file .env.dev --file compose.dev.yaml ps
+curl http://localhost:8083/actuator/health
 # {"status":"UP"}
 ```
 
 On Windows PowerShell, check the endpoint with:
 
 ```powershell
-Invoke-RestMethod http://localhost:8080/actuator/health
+Invoke-RestMethod http://localhost:8083/actuator/health
 ```
 
-To run the backend locally instead, start PostgreSQL with `docker compose up -d postgres`, then from `backend/` run:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-The local database defaults match `.env.example`. If you change the database credentials or port there, export the matching `POSTGRES_*` variables in your shell before starting the backend.
+The development database settings are in `.env.dev`. See [Local Environments](docs/environments.md) for DEV/TEST image builds, the PROD environment, and safe migration from the legacy Compose files.
 
 ## Security
 

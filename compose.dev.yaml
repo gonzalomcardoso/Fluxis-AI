@@ -1,0 +1,49 @@
+name: fluxis-env-dev
+
+services:
+  postgres:
+    container_name: postgres-dev
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DEV_DB:-fluxis_dev}
+      POSTGRES_USER: ${POSTGRES_DEV_USER:-fluxis_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_DEV_PASSWORD:?Set POSTGRES_DEV_PASSWORD in .env.dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_DEV_PORT:-5432}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  backend_env_dev:
+    image: fluxis-ai-backend:env-dev
+    container_name: env-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: 8080
+      APP_FRONTEND_URL: http://localhost:5173
+      DEV_SEED_PASSWORD: ${DEV_SEED_PASSWORD:-local-development-only-password}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DEV_DB:-fluxis_dev}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_DEV_USER:-fluxis_dev}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_DEV_PASSWORD:?Set POSTGRES_DEV_PASSWORD in .env.dev}
+    ports:
+      - "127.0.0.1:8083:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  postgres_dev_data:
+    name: fluxis-ai_postgres_dev_data
