@@ -145,7 +145,7 @@ The services, ports, and volumes are independent. Data is not copied between the
 
 ## Legacy `dev` Checkout: `env-dev` and `env-test`
 
-The separate checkout at `C:\Users\pudre\Documents\GitHub\test\Fluxis-AI` can run its `dev` branch against the existing development and test databases without replacing the main checkout's containers.
+A separate checkout on the `dev` branch can run against the existing development and test databases without replacing the main checkout's containers.
 
 | Environment | Backend image/container | Frontend | API | Database |
 |---|---|---|---|---|
@@ -165,13 +165,22 @@ Copy-Item .\target\fluxis-ai-backend-0.1.0-SNAPSHOT.jar .\fluxis-ai-backend-env-
 docker build --file .\Dockerfile.jar --tag fluxis-ai-backend:env-test .
 ```
 
-From the checkout root, provide the main repository's `.env` for database credentials and start either or both backends:
+From the checkout root, provide the path to the main repository's `.env` file for database credentials and start either or both backends:
 
 ```powershell
-$envFile = "C:\Users\pudre\Documents\GitHub\Fluxis-AI\.env"
+$envFile = Read-Host "Path to the main checkout .env file"
 docker compose --project-name fluxis-env-dev --env-file $envFile --file .\compose.env-dev.yaml up -d
 docker compose --project-name fluxis-env-test --env-file $envFile --file .\compose.env-test.yaml up -d
 ```
+
+`$envFile` and `$composeFile` are PowerShell variables, not entries for `.env`. Keep `.env` in Compose `KEY=value` format; do not put PowerShell assignments in it. To reuse local paths in new PowerShell sessions, add assignments to your PowerShell profile (open it with `notepad $PROFILE`) and replace these example paths with the paths on your machine:
+
+```powershell
+$envFile = "C:\path\to\main-checkout\.env"
+$composeFile = "C:\path\to\prod-checkout\compose.yaml"
+```
+
+Keep the profile on your machine, outside the repository. When both paths are absolute, Compose can be invoked from any working directory by passing `--env-file $envFile` and `--file $composeFile`. Commands that use relative paths without these options still need to run from the documented checkout or application directory.
 
 Start the matching frontend from `frontend/`:
 
@@ -181,3 +190,49 @@ npm run dev:test
 ```
 
 The dev and test API images remain separate (`env-dev` and `env-test`), while both use their corresponding existing database. Do not run `docker compose down -v`; it can remove volumes belonging to the other environments.
+
+## Local Production-Like Environment: `env-prod`
+
+The `prod` Compose profile runs a separate backend container named `env-prod` and PostgreSQL 18 database `fluxis_prod`. It has its own `postgres_prod_data` volume and credentials; it does not share dev/test data. PostgreSQL has no published host port, and the API binds to `127.0.0.1:8084`. The frontend runs at `http://localhost:5175` or `http://127.0.0.1:5175` and proxies API requests to port `8084`; the prod API explicitly allows both local origins.
+
+The `prod` Spring profile does not activate either synthetic-data seeder and disables public registration. Flyway creates the schema only; no users or job opportunities are inserted. Job opportunities should be created through the authenticated application, not by adding seed or sample rows to this database.
+
+This is a local simulation, not a production deployment. Keep its credentials separate from dev/test. The local Compose default disables the `Secure` cookie flag because the frontend uses HTTP; real deployments must use HTTPS and set `SESSION_COOKIE_SECURE=true`. The application currently has no role model, so the one bootstrapped account is the sole application account, not an account with an enforced `admin` role.
+
+Copy `.env.example` to `.env`, replace `POSTGRES_PROD_PASSWORD` with a unique local password, and run these commands from the repository root. They use the `.env` in the current checkout:
+
+```powershell
+$envFile = Join-Path (Get-Location) ".env"
+docker compose --env-file $envFile --profile prod build backend_prod
+docker compose --env-file $envFile --profile prod up -d postgres_prod
+docker compose --env-file $envFile --profile prod run --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --spring.main.web-application-type=none
+docker compose --env-file $envFile --profile prod up -d backend_prod
+docker compose --env-file $envFile --profile prod ps
+Invoke-RestMethod http://localhost:8084/actuator/health
+```
+
+The bootstrap command prompts for the initial account email, display name, and password without echoing the password. It runs without starting the web server, stores a BCrypt hash, and only runs when the users table is empty; it fails if any account already exists. Public registration remains disabled afterward. Do not run `docker compose down -v`; that removes the environment's persistent data.
+
+If the single account password is forgotten, rebuild the backend image and run this one-time recovery command from the repository root. It targets the existing `fluxis_prod` database, requires exactly one account, verifies its email and asks you to type `RESET`, then prompts for a new password without echoing it. It changes only that account's BCrypt password hash:
+
+```powershell
+docker compose --env-file $envFile --profile prod build backend_prod
+docker compose --env-file $envFile --profile prod run --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --spring.main.web-application-type=none
+```
+
+Do not run the initial `prod-bootstrap` command again; the account already exists.
+
+To verify a password against the existing account without changing the database, rebuild the backend image and run the read-only password check. Enter the account email and password in the interactive prompts. The command reports only the received character counts and whether the password matches; it never prints the password or hash:
+
+```powershell
+docker compose --env-file $envFile --profile prod build backend_prod
+docker compose --env-file $envFile --profile prod run --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --spring.main.web-application-type=none
+```
+
+The check requires exactly one account and does not update it. `Length received` counts Unicode code points; letters and digits are classified with Java's Unicode character rules. `Console.readPassword()` reads a line without its line terminator.
+
+Start the matching frontend from `frontend/`:
+
+```powershell
+npm run dev:prod
+```

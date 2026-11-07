@@ -9,7 +9,12 @@ const envDir = fileURLToPath(new URL('..', import.meta.url))
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, '')
   const apiProxyTarget =
-    env.VITE_API_PROXY_TARGET ?? (mode === 'test' ? 'http://localhost:8082' : 'http://localhost:8083')
+    env.VITE_API_PROXY_TARGET ??
+    (mode === 'test'
+      ? 'http://localhost:8082'
+      : mode === 'prod'
+        ? 'http://localhost:8084'
+        : 'http://localhost:8083')
 
   return {
     envDir: '..',
@@ -23,7 +28,6 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: apiProxyTarget,
-          changeOrigin: true,
         },
       },
     },

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "dev:test": "vite --mode test --host 127.0.0.1 --port 5174 --strictPort",
+    "dev:prod": "vite --mode prod --host 127.0.0.1 --port 5175 --strictPort",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",

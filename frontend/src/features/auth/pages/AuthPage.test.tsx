@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthProvider } from '@/features/auth/auth-context'
@@ -45,6 +45,10 @@ describe('AuthPage', () => {
     registerMock.mockResolvedValue()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('submits credentials and displays an authentication error', async () => {
     const user = userEvent.setup()
     loginMock.mockRejectedValueOnce(new ApiError('Correo o contraseña no válidos', 401))
@@ -74,5 +78,13 @@ describe('AuthPage', () => {
       'synthetic-password',
     )
     expect(loginMock).toHaveBeenCalledWith('user@example.test', 'synthetic-password')
+  })
+
+  it('hides public registration in prod mode', async () => {
+    vi.stubEnv('MODE', 'prod')
+    renderAuthPage()
+
+    await screen.findByLabelText(es.auth.email)
+    expect(screen.queryByRole('button', { name: es.auth.registerAction })).not.toBeInTheDocument()
   })
 })
