@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:${POSTGRES_DEV_PORT:5432}/${POSTGRES_DEV_DB:fluxis_dev}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_DEV_USER:fluxis_dev}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+app:
+  cors:
+    allowed-origin: ${APP_FRONTEND_URL:http://localhost:5173}
+  dev:
+    seed-password: ${DEV_SEED_PASSWORD:local-development-only-password}

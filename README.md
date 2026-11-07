@@ -1,0 +1,88 @@
+# Fluxis AI
+
+[![CI](https://github.com/gonzalomcardoso/Fluxis-AI/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/gonzalomcardoso/Fluxis-AI/actions/workflows/ci.yml)
+
+Professional productivity web platform: intelligent email management (Gmail), job search, lightweight CRM, services and proposals, subscriptions, and tasks, with AI that **proposes** and a user who **decides**.
+
+> **Core principle: AI proposes; the user decides.**
+> AI never sends emails, moves messages, or deletes information without explicit approval. Every approved action is validated and executed by the backend, and the interface marks it as complete only after server confirmation.
+
+**Status:** in development (30-day plan). Milestone 1: [job opportunities, testing, and continuous integration](docs/milestone-1.md). Initially for personal use; the architecture is designed to evolve to support multiple users.
+
+## Technology stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, TypeScript (strict), Vite, React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS, Vitest, React Testing Library |
+| Backend | Java 25 LTS, Spring Boot 4.1, Spring Security, Spring Data JPA, Flyway, Spring AI, JUnit, Mockito, Testcontainers |
+| Data | PostgreSQL 18 |
+| Infrastructure | Docker, Docker Compose, GitHub Actions |
+| Optional | Python (FastAPI) only if there is a specific benefit; see [ADR-0002](docs/decisions/0002-modular-monolith-and-python.md) |
+
+Exact versions and rationale: [ADR-0001](docs/decisions/0001-stack-versions.md).
+
+## Repository structure
+
+```
+fluxis-ai/
+├── backend/            # Spring Boot (modular monolith)
+├── compose.dev.yaml    # Isolated development environment
+├── compose.test.yaml   # Isolated manual test environment
+├── compose.prod.yaml   # Isolated local PROD environment
+├── frontend/           # React + TypeScript + Vite
+├── docs/
+│   ├── architecture.md
+│   ├── data-model.md
+│   ├── roadmap.md      # 30-day plan
+│   └── decisions/      # ADRs: technical decision records
+├── .github/workflows/  # CI (day 5)
+├── .env.dev.example
+├── .env.test.example
+├── .env.prod.example
+└── README.md
+```
+
+## Getting started
+
+See [Milestone 1](docs/milestone-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
+See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures.
+
+Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend; JDK 25 (Temurin) is needed for local Maven builds and tests.
+
+```bash
+cp .env.dev.example .env.dev   # Fill in local values; never commit .env files
+docker build --file backend/Dockerfile --tag fluxis-ai-backend:env-dev backend
+docker compose --env-file .env.dev --file compose.dev.yaml up -d
+```
+
+The Compose file starts PostgreSQL and the backend. Check the backend health:
+
+```bash
+docker compose --env-file .env.dev --file compose.dev.yaml ps
+curl http://localhost:8083/actuator/health
+# {"status":"UP"}
+```
+
+On Windows PowerShell, check the endpoint with:
+
+```powershell
+Invoke-RestMethod http://localhost:8083/actuator/health
+```
+
+The development database settings are in `.env.dev`. See [Local Environments](docs/environments.md) for DEV/TEST image builds and configuration for all three environments.
+
+## Security
+
+- Secrets and OAuth tokens are **never** stored in the repository or in `localStorage`.
+- Google tokens remain in the backend and are stored encrypted.
+- Use the minimum required Gmail scopes; document the retention policy before syncing email.
+
+## Git workflow
+
+- `main`: stable. `dev`: daily integration. Work branches: `feat/...`, `fix/...`, `docs/...`.
+- Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
+- See [ADR-0003](docs/decisions/0003-git-workflow.md) for details.
+
+## License
+
+[Apache License 2.0](LICENSE)
