@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/features/auth/auth-context'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { JobOpportunityListPage } from '@/features/job-opportunities/pages/JobOpportunityListPage'
 import { NewJobOpportunityPage } from '@/features/job-opportunities/pages/NewJobOpportunityPage'
+import { CrmPage } from '@/features/crm/CrmPage'
 import { es } from '@/i18n/es'
 
 const queryClient = new QueryClient({
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/oportunidades" replace />} />
         <Route path="oportunidades" element={<JobOpportunityListPage />} />
         <Route path="oportunidades/nueva" element={<NewJobOpportunityPage />} />
+        <Route path="crm" element={<CrmPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
