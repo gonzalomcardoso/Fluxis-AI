@@ -9,6 +9,7 @@ import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { JobOpportunityListPage } from '@/features/job-opportunities/pages/JobOpportunityListPage'
 import { NewJobOpportunityPage } from '@/features/job-opportunities/pages/NewJobOpportunityPage'
 import { CrmPage } from '@/features/crm/CrmPage'
+import { JobApplicationsPage } from '@/features/job-applications/JobApplicationsPage'
 import { es } from '@/i18n/es'
 
 const queryClient = new QueryClient({
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="oportunidades" element={<JobOpportunityListPage />} />
         <Route path="oportunidades/nueva" element={<NewJobOpportunityPage />} />
         <Route path="crm" element={<CrmPage />} />
+        <Route path="candidaturas" element={<JobApplicationsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

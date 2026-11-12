@@ -54,6 +54,9 @@ export function Layout() {
             <NavLink to="/crm" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
               CRM
             </NavLink>
+            <NavLink to="/candidaturas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Candidaturas
+            </NavLink>
             <span className="hidden text-sm text-slate-600 md:inline">{user?.displayName}</span>
             <Button
               className="px-3"

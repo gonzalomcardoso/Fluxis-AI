@@ -1,0 +1,9 @@
+import { z } from 'zod'
+
+export const APPLICATION_STATUSES = ['PENDING','INTERESTING','PREPARING_APPLICATION','APPLICATION_SENT','INTERVIEW','OFFER_RECEIVED','REJECTED','DISCARDED'] as const
+export const applicationSchema = z.object({ id:z.string().uuid(), jobOpportunityId:z.string().uuid(), companyName:z.string(), title:z.string(), status:z.enum(APPLICATION_STATUSES), appliedOn:z.iso.date().nullable(), notes:z.string().nullable(), createdAt:z.iso.datetime({offset:true}), updatedAt:z.iso.datetime({offset:true}) })
+export const interviewSchema = z.object({ id:z.string().uuid(), jobApplicationId:z.string().uuid(), scheduledAt:z.iso.datetime({offset:true}), interviewType:z.string(), notes:z.string().nullable(), createdAt:z.iso.datetime({offset:true}), updatedAt:z.iso.datetime({offset:true}) })
+export const followUpSchema = z.object({ id:z.string().uuid(), jobApplicationId:z.string().uuid(), dueOn:z.iso.date(), description:z.string(), completed:z.boolean(), createdAt:z.iso.datetime({offset:true}), updatedAt:z.iso.datetime({offset:true}) })
+export const pageSchema = z.object({content:z.array(applicationSchema),page:z.number(),size:z.number(),totalElements:z.number(),totalPages:z.number()})
+export type JobApplication=z.infer<typeof applicationSchema>; export type Interview=z.infer<typeof interviewSchema>; export type FollowUp=z.infer<typeof followUpSchema>; export type ApplicationStatus=(typeof APPLICATION_STATUSES)[number]
+export type CreateApplicationRequest={jobOpportunityId:string;status?:ApplicationStatus;appliedOn?:string;notes?:string}; export type UpdateApplicationRequest={status:ApplicationStatus;appliedOn?:string;notes?:string}; export type InterviewRequest={scheduledAt:string;interviewType:string;notes?:string}; export type FollowUpRequest={dueOn:string;description:string;completed:boolean}
