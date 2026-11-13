@@ -1,0 +1,3 @@
+package com.fluxisai.proposal;
+import java.math.BigDecimal; import java.time.*; import java.util.*;
+public record ProposalResponse(UUID id,UUID clientId,String title,String description,String currency,LocalDate validUntil,ProposalStatus status,BigDecimal subtotal,BigDecimal total,List<ProposalItemResponse> items,OffsetDateTime createdAt,OffsetDateTime updatedAt){static ProposalResponse from(Proposal p,List<ProposalItem> i){return new ProposalResponse(p.getId(),p.getClientId(),p.getTitle(),p.getDescription(),p.getCurrency(),p.getValidUntil(),p.getStatus(),p.getSubtotal(),p.getTotal(),i.stream().map(ProposalItemResponse::from).toList(),p.getCreatedAt(),p.getUpdatedAt());}}

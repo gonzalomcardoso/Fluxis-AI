@@ -57,6 +57,12 @@ export function Layout() {
             <NavLink to="/candidaturas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
               Candidaturas
             </NavLink>
+            <NavLink to="/clientes-servicios" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Clientes y servicios
+            </NavLink>
+            <NavLink to="/propuestas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Propuestas
+            </NavLink>
             <span className="hidden text-sm text-slate-600 md:inline">{user?.displayName}</span>
             <Button
               className="px-3"
