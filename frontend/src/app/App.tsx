@@ -12,6 +12,8 @@ import { CrmPage } from '@/features/crm/CrmPage'
 import { JobApplicationsPage } from '@/features/job-applications/JobApplicationsPage'
 import { ClientServicesPage } from '@/features/client-services/ClientServicesPage'
 import { ProposalsPage } from '@/features/proposals/ProposalsPage'
+import { SubscriptionsPage } from '@/features/subscriptions/SubscriptionsPage'
+import { TasksPage } from '@/features/tasks/TasksPage'
 import { es } from '@/i18n/es'
 
 const queryClient = new QueryClient({
@@ -63,6 +65,8 @@ function AppRoutes() {
         <Route path="candidaturas" element={<JobApplicationsPage />} />
         <Route path="clientes-servicios" element={<ClientServicesPage />} />
         <Route path="propuestas" element={<ProposalsPage />} />
+        <Route path="suscripciones" element={<SubscriptionsPage />} />
+        <Route path="tareas" element={<TasksPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

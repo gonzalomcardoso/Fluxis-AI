@@ -1,0 +1,3 @@
+package com.fluxisai.subscription;
+import java.math.BigDecimal; import java.time.*; import java.util.UUID;
+public record SubscriptionResponse(UUID id,String name,String provider,BigDecimal amount,String currency,SubscriptionPeriodicity periodicity,LocalDate nextChargeDate,LocalDate renewalDate,SubscriptionStatus status,String category,String notes,String managementUrl,OffsetDateTime createdAt,OffsetDateTime updatedAt){static SubscriptionResponse from(Subscription s){return new SubscriptionResponse(s.getId(),s.getName(),s.getProvider(),s.getAmount(),s.getCurrency(),s.getPeriodicity(),s.getNextChargeDate(),s.getRenewalDate(),s.getStatus(),s.getCategory(),s.getNotes(),s.getManagementUrl(),s.getCreatedAt(),s.getUpdatedAt());}}
