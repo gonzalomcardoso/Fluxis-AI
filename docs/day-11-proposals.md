@@ -10,6 +10,8 @@ Day 11 adds commercial proposals related to a client and one or more professiona
 - Backend CRUD at `/api/proposals`.
 - Validation that the client and services belong to the authenticated user.
 - Total calculation from proposal items.
+- Proposal change history at `/api/proposals/{id}/history`.
+- History snapshots for creation and updates, including status and totals.
 - Frontend route `/propuestas` with client/service selection and item total display.
 - Frontend schema tests for decimal totals and status validation.
 
