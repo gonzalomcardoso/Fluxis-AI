@@ -34,6 +34,9 @@ export function Layout() {
             Fluxis <span className="text-indigo-600">AI</span>
           </NavLink>
           <nav aria-label={es.navigation.main} className="flex items-center gap-2 sm:gap-5">
+            <NavLink to="/dashboard" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Dashboard
+            </NavLink>
             <NavLink
               to="/oportunidades"
               end
@@ -50,6 +53,24 @@ export function Layout() {
               className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
             >
               {es.navigation.newOpportunity}
+            </NavLink>
+            <NavLink to="/crm" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              CRM
+            </NavLink>
+            <NavLink to="/candidaturas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Candidaturas
+            </NavLink>
+            <NavLink to="/clientes-servicios" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Clientes y servicios
+            </NavLink>
+            <NavLink to="/propuestas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Propuestas
+            </NavLink>
+            <NavLink to="/suscripciones" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Suscripciones
+            </NavLink>
+            <NavLink to="/tareas" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Tareas
             </NavLink>
             <span className="hidden text-sm text-slate-600 md:inline">{user?.displayName}</span>
             <Button
