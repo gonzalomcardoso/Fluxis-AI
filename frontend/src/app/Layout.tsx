@@ -34,6 +34,9 @@ export function Layout() {
             Fluxis <span className="text-indigo-600">AI</span>
           </NavLink>
           <nav aria-label={es.navigation.main} className="flex items-center gap-2 sm:gap-5">
+            <NavLink to="/dashboard" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-950'}`}>
+              Dashboard
+            </NavLink>
             <NavLink
               to="/oportunidades"
               end

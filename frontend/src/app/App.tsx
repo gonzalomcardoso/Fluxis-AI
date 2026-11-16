@@ -14,6 +14,7 @@ import { ClientServicesPage } from '@/features/client-services/ClientServicesPag
 import { ProposalsPage } from '@/features/proposals/ProposalsPage'
 import { SubscriptionsPage } from '@/features/subscriptions/SubscriptionsPage'
 import { TasksPage } from '@/features/tasks/TasksPage'
+import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { es } from '@/i18n/es'
 
 const queryClient = new QueryClient({
@@ -58,7 +59,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/oportunidades" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="oportunidades" element={<JobOpportunityListPage />} />
         <Route path="oportunidades/nueva" element={<NewJobOpportunityPage />} />
         <Route path="crm" element={<CrmPage />} />
