@@ -44,6 +44,7 @@ describe('App authentication flow', () => {
     await user.type(await screen.findByLabelText(es.auth.email), 'user@example.test')
     await user.type(screen.getByLabelText(es.auth.password), 'synthetic-password')
     await user.click(screen.getByRole('button', { name: es.auth.loginAction }))
+    await user.click(await screen.findByRole('link', { name: 'Oportunidades' }))
 
     expect(await screen.findByRole('heading', { name: es.list.title })).toBeInTheDocument()
     expect(loginMock).toHaveBeenCalledWith('user@example.test', 'synthetic-password')

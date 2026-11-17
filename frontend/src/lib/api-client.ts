@@ -1,9 +1,15 @@
-import { ApiError } from '@/lib/api-error'
+import { ApiError, ResponseValidationError } from '@/lib/api-error'
 import { es } from '@/i18n/es'
 
 const apiBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '')
 const csrfPath = '/auth/csrf'
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+export interface ResponseSchema<T> {
+  safeParse(value: unknown):
+    | { success: true; data: T }
+    | { success: false; error: { issues: readonly unknown[] } }
+}
 
 interface CsrfTokenResponse {
   token: string
@@ -43,7 +49,7 @@ function problemMessage(payload: unknown, fallback: string): string {
   return fallback
 }
 
-export async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
+export async function apiRequest<T = unknown>(path: string, init?: RequestInit, schema?: ResponseSchema<T>): Promise<T> {
   const method = (init?.method ?? 'GET').toUpperCase()
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
@@ -67,7 +73,7 @@ export async function apiRequest(path: string, init?: RequestInit): Promise<unkn
     throw new ApiError(es.form.networkError, 0)
   }
 
-  const payload = await parseResponse(response)
+  const { payload, rawBody } = await parseResponse(response)
 
   if (!response.ok) {
     if (response.status === 401 && path !== '/auth/login' && path !== '/auth/register') {
@@ -77,14 +83,37 @@ export async function apiRequest(path: string, init?: RequestInit): Promise<unkn
       problemMessage(payload, es.api.requestFailed(response.status)),
       response.status,
       isRecord(payload) ? readFieldErrors(payload.errors) : {},
+      response.url,
+      method,
+      rawBody,
     )
+  }
+
+  if (schema) {
+    const parsed = schema.safeParse(payload)
+    if (!parsed.success) {
+      if (import.meta.env.DEV) {
+        console.error('API response validation failed', {
+          url: response.url,
+          method,
+          issues: parsed.error.issues,
+        })
+      }
+      throw new ResponseValidationError(
+        import.meta.env.DEV ? 'API response validation failed' : es.api.invalidResponse,
+        response.url,
+        method,
+        rawBody,
+      )
+    }
+    return parsed.data
   }
 
   if (path === '/auth/login' || path === '/auth/logout') {
     clearCsrfToken()
   }
 
-  return payload
+  return payload as T
 }
 
 async function getCsrfToken(): Promise<CsrfTokenResponse> {
@@ -114,17 +143,17 @@ function clearCsrfToken() {
   csrfRequest = undefined
 }
 
-async function parseResponse(response: Response): Promise<unknown> {
+async function parseResponse(response: Response): Promise<{ payload: unknown; rawBody: string }> {
   const responseText = await response.text()
   if (!responseText) {
-    return null
+    return { payload: null, rawBody: '' }
   }
   try {
-    return JSON.parse(responseText) as unknown
+    return { payload: JSON.parse(responseText) as unknown, rawBody: responseText }
   } catch {
     if (response.ok) {
       throw new ApiError(es.api.invalidResponse, response.status)
     }
-    return null
+    return { payload: null, rawBody: responseText }
   }
 }

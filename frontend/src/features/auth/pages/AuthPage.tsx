@@ -52,7 +52,9 @@ export function AuthPage() {
               <input
                 autoComplete="name"
                 className="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+                id="auth-display-name"
                 maxLength={200}
+                name="displayName"
                 onChange={(event) => setDisplayName(event.target.value)}
                 required
                 value={displayName}
@@ -64,7 +66,9 @@ export function AuthPage() {
             <input
               autoComplete="email"
               className="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+              id="auth-email"
               maxLength={320}
+              name="email"
               onChange={(event) => setEmail(event.target.value)}
               required
               type="email"
