@@ -49,6 +49,7 @@ pgdata/
 *.log
 
 # ---- IDEs and operating system ----
+.continue/
 .idea/
 *.iml
 .vscode/
