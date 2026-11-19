@@ -8,7 +8,7 @@ public record ProfessionalServiceRequest(
         @Size(max=20000) String description,
         @Size(max=120) String category,
         @NotNull PricingModel pricingModel,
-        @NotNull @DecimalMin(value="0.01") @Digits(integer=15,fraction=4) BigDecimal rate,
+        @NotNull @DecimalMin(value="0.01") @Digits(integer=17,fraction=2) BigDecimal rate,
         @NotBlank @Pattern(regexp="[A-Z]{3}",message="La moneda debe tener tres letras mayúsculas") String currency,
         Boolean available,
         ProfessionalServiceStatus status,

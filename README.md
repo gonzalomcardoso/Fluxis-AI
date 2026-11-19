@@ -7,7 +7,7 @@ Professional productivity web platform: intelligent email management (Gmail), jo
 > **Core principle: AI proposes; the user decides.**
 > AI never sends emails, moves messages, or deletes information without explicit approval. Every approved action is validated and executed by the backend, and the interface marks it as complete only after server confirmation.
 
-**Status:** in development (30-day plan). Milestone 1: [job opportunities, testing, and continuous integration](docs/milestone-1.md). Initially for personal use; the architecture is designed to evolve to support multiple users.
+**Status:** in development (30-day plan). Days 1-14 are implemented: authentication, job search, CRM, clients and services, proposals, subscriptions, tasks, audit events, and the dashboard. Milestone 1 remains documented in [job opportunities, testing, and continuous integration](docs/milestone-1.md). Gmail and AI are planned for the next phase. Initially for personal use; the architecture is designed to evolve to support multiple users.
 
 ## Technology stack
 
@@ -77,10 +77,18 @@ The development database settings are in `.env.dev`. See [Local Environments](do
 - Google tokens remain in the backend and are stored encrypted.
 - Use the minimum required Gmail scopes; document the retention policy before syncing email.
 
+## Operating rules
+
+- The assistant never runs Git commands that modify the repository; the user owns all Git operations.
+- Validation is strictly sequential: DEV, then TEST, then PROD, with explicit user approval between environments.
+- Database migrations are prepared and documented first and are never executed without explicit approval.
+
+See the [Master Prompt](docs/master-prompt.md) for the highest-priority rules.
+
 ## Git workflow
 
 - `main`: stable. `dev`: daily integration. Work branches: `feat/...`, `fix/...`, `docs/...`.
-- Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
+- Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`)
 - See [ADR-0003](docs/decisions/0003-git-workflow.md) for details.
 
 ## License

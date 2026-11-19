@@ -9,7 +9,7 @@ El día 10 añade la gestión de clientes y del catálogo de servicios profesion
 - Clientes con empresa y contacto opcionales, estado, origen y notas.
 - Servicios profesionales con nombre, categoría, descripción, tarifa, moneda, disponibilidad y estado.
 - Modelos de precio: por hora, precio fijo y recurrente.
-- Tarifas almacenadas como `NUMERIC(19,4)` y validadas con `BigDecimal`.
+- Tarifas monetarias almacenadas como `NUMERIC(19,2)` y validadas con `BigDecimal`.
 - Validación de que las empresas y contactos relacionados pertenecen al usuario actual.
 - CRUD completo desde la API y la pantalla `/clientes-servicios`.
 

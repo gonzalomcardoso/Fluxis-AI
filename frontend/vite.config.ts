@@ -11,9 +11,9 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget =
     env.VITE_API_PROXY_TARGET ??
     (mode === 'test'
-      ? 'http://localhost:8082'
+      ? 'http://localhost:8084'
       : mode === 'prod'
-        ? 'http://localhost:8084'
+        ? 'http://localhost:8085'
         : 'http://localhost:8083')
 
   return {

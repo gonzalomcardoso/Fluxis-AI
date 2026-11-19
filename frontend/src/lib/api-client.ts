@@ -49,7 +49,12 @@ function problemMessage(payload: unknown, fallback: string): string {
   return fallback
 }
 
-export async function apiRequest<T = unknown>(path: string, init?: RequestInit, schema?: ResponseSchema<T>): Promise<T> {
+export async function apiRequest<T = unknown>(
+  path: string,
+  init?: RequestInit,
+  schema?: ResponseSchema<T>,
+  allowCsrfRetry = true,
+): Promise<T> {
   const method = (init?.method ?? 'GET').toUpperCase()
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
@@ -76,6 +81,17 @@ export async function apiRequest<T = unknown>(path: string, init?: RequestInit, 
   const { payload, rawBody } = await parseResponse(response)
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      clearCsrfToken()
+    }
+    if (
+      response.status === 403
+      && allowCsrfRetry
+      && unsafeMethods.has(method)
+      && path !== csrfPath
+    ) {
+      return apiRequest(path, init, schema, false)
+    }
     if (response.status === 401 && path !== '/auth/login' && path !== '/auth/register') {
       window.dispatchEvent(new Event('fluxis:unauthorized'))
     }

@@ -63,8 +63,10 @@ public class DashboardService {
 
         var monthly = new TreeMap<String, BigDecimal>();
         var annual = new TreeMap<String, BigDecimal>();
+        var today = LocalDate.now(ZoneOffset.UTC);
         var upcoming = subscriptionList.stream().filter(s -> s.getRenewalDate() != null
-                && !s.getRenewalDate().isAfter(LocalDate.now().plusDays(30))).count();
+                && !s.getRenewalDate().isBefore(today)
+                && !s.getRenewalDate().isAfter(today.plusDays(30))).count();
         subscriptionList.forEach(s -> {
             monthly.merge(s.getCurrency(), scale(monthly(s)), BigDecimal::add);
             annual.merge(s.getCurrency(), scale(annual(s)), BigDecimal::add);
@@ -74,11 +76,10 @@ public class DashboardService {
         accepted.forEach((currency, revenue) -> margins.put(currency, revenue.subtract(monthly.getOrDefault(currency, BigDecimal.ZERO))));
         monthly.forEach((currency, cost) -> margins.putIfAbsent(currency, BigDecimal.ZERO.subtract(cost)));
 
-        var now = LocalDate.now();
         var pending = taskList.stream().filter(t -> t.getStatus() == TaskStatus.TODO).count();
         var inProgress = taskList.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).count();
         var done = taskList.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
-        var overdue = taskList.stream().filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
+        var overdue = taskList.stream().filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(today)
                 && t.getStatus() != TaskStatus.DONE && t.getStatus() != TaskStatus.CANCELLED).count();
 
         return new DashboardResponse(

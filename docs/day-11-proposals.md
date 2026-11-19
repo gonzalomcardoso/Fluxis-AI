@@ -4,9 +4,9 @@ Day 11 adds commercial proposals related to a client and one or more professiona
 
 ## Scope completed
 
-- `proposals` and `proposal_items` Flyway migration V7.
+- `proposals` and `proposal_items` Flyway migration V7, with V12 aligning monetary totals to two decimals.
 - Proposal statuses: `DRAFT`, `PENDING_REVIEW`, `SENT`, `ACCEPTED`, `REJECTED` and `EXPIRED`.
-- Decimal amounts using `NUMERIC(19,4)` and `BigDecimal`.
+- All monetary values, including proposal unit prices, totals, and line amounts, use two decimal places. Quantities also use two decimal places.
 - Backend CRUD at `/api/proposals`.
 - Validation that the client and services belong to the authenticated user.
 - Total calculation from proposal items.
