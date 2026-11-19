@@ -44,6 +44,8 @@ venv/
 .mypy_cache/
 
 # ---- Docker / local data ----
+*.dump
+*.dump.*
 docker-data/
 pgdata/
 *.log
