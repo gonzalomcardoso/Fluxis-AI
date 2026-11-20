@@ -142,4 +142,58 @@ class AuthApiIT extends PostgreSqlIntegrationTestSupport {
                                 """.formatted(email)))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void csrfTokenIsBoundToItsServerSideSession() throws Exception {
+        MvcResult firstBootstrap = mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession firstSession = (MockHttpSession) firstBootstrap.getRequest().getSession(false);
+        String firstToken = JsonPath.read(firstBootstrap.getResponse().getContentAsString(), "$.token");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .session(firstSession)
+                        .header("X-CSRF-TOKEN", firstToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "displayName": "Synthetic Auth Test User",
+                                  "password": "synthetic-password-123"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isCreated());
+
+        MvcResult secondBootstrap = mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession secondSession = (MockHttpSession) secondBootstrap.getRequest().getSession(false);
+        String secondToken = JsonPath.read(secondBootstrap.getResponse().getContentAsString(), "$.token");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .session(secondSession)
+                        .header("X-CSRF-TOKEN", firstToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "displayName": "Synthetic Auth Test User",
+                                  "password": "synthetic-password-123"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/auth/register")
+                        .session(secondSession)
+                        .header("X-CSRF-TOKEN", secondToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "displayName": "Synthetic Auth Test User",
+                                  "password": "synthetic-password-123"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isConflict());
+    }
 }

@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/api-client'
+import { uuidSchema } from '@/lib/uuid.schema'
 
 const authenticatedUserSchema = z.object({
-  id: z.string().uuid(),
+  id: uuidSchema,
   email: z.email(),
   displayName: z.string(),
 })

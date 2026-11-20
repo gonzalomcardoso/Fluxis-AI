@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Open the URL printed by Vite (default: `http://localhost:5173`). The development server forwards `/api` to `http://localhost:8080`; there is no need to enable CORS on the backend.
+Open the URL printed by Vite (default: `http://localhost:5173`). The development server forwards `/api` to `http://localhost:8083`; there is no need to enable CORS on the backend.
 
 `VITE_API_URL=/api` is documented in the root `.env.example` and is the development value. For other environments, set `VITE_API_URL` to the public API base path, for example `https://api.example.com/api`. `VITE_*` variables are included in the browser bundle and must never contain secrets.
 
@@ -31,4 +31,4 @@ npm run lint
 npm exec -- tsc --noEmit
 ```
 
-The application provides the opportunity list at `/oportunidades` and the form at `/oportunidades/nueva`.
+The application provides the day-14 modules: opportunities, applications, CRM,\nclients and services, proposals, subscriptions, tasks, and the dashboard.

@@ -2,11 +2,13 @@
 
 Each local environment has its own Compose file, variable file, project, network, database credential, and persistent database volume.
 
+Validation is strictly sequential: **DEV -> TEST -> PROD**. Do not advance to the next environment until the user has run and approved the checks for the current environment. See [Environment Validation Workflow](environment-validation.md) and the [Golden Rules](master-prompt.md).
+
 | Environment | Compose file | Local env file | Backend URLs | PostgreSQL volume |
 |---|---|---|---|---|
 | DEV | `compose.dev.yaml` | `.env.dev` | `8083` | `fluxis-ai_postgres_dev_data` |
-| TEST | `compose.test.yaml` | `.env.test` | `8082` | `fluxis-ai_postgres_test_data` |
-| PROD | `compose.prod.yaml` | `.env.prod` | `8084` | `fluxis-ai_postgres_prod_data` |
+| TEST | `compose.test.yaml` | `.env.test` | `8084` | `fluxis-ai_postgres_test_data` |
+| PROD | `compose.prod.yaml` | `.env.prod` | `8085` | `fluxis-ai_postgres_prod_data` |
 
 The Compose files are self-contained and use separate Docker networks. They retain the existing named database volumes so recreating a container does not remove its data. Do not use `docker compose down -v` or `docker volume rm` when switching configurations.
 
@@ -73,14 +75,14 @@ The dev and test Compose files run the image tags built above and do not build t
 Check health:
 
 ```powershell
-Invoke-RestMethod http://localhost:8082/actuator/health
 Invoke-RestMethod http://localhost:8083/actuator/health
 Invoke-RestMethod http://localhost:8084/actuator/health
+Invoke-RestMethod http://localhost:8085/actuator/health
 ```
 
 Dev frontend: run `npm run dev` from `frontend/`; it proxies to port `8083`.
-Test frontend: run `npm run dev:test` from `frontend/`; it proxies to port `8082`.
-PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8084`.
+Test frontend: run `npm run dev:test` from `frontend/`; it proxies to port `8084`.
+PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8085`.
 
 Automated backend integration tests use Testcontainers and an ephemeral PostgreSQL instance; they do not connect to these manual Compose databases. Run `.\mvnw.cmd verify` from `backend/`.
 
@@ -90,16 +92,16 @@ If a backend fails with `password authentication failed`, stop there: verify tha
 
 ## Environment Data and Security
 
-DEV and TEST run synthetic local accounts and data; PROD disables public registration and synthetic seeders. The PROD database is separate and should contain only data created through the application. PostgreSQL ports for DEV and TEST bind to loopback; PROD PostgreSQL has no published host port.
+DEV runs the `dev` profile and its synthetic development accounts. TEST runs the `test,test-data` profiles against an isolated test database, with the manual-test seeder controlled by `TEST_SEED_PASSWORD`. PROD disables public registration and synthetic seeders. The PROD database is separate and should contain only data created through the application. PostgreSQL ports for DEV and TEST bind to loopback; PROD PostgreSQL has no published host port.
 
 The local PROD simulation uses HTTP and defaults `SESSION_COOKIE_SECURE=false`. Real deployments must use HTTPS and set `SESSION_COOKIE_SECURE=true`. The application has no role model; its single bootstrapped account is not an enforced role-based admin.
 
 To bootstrap the initial PROD account, reset its password, or verify a password against the existing hash, use the interactive commands below from the configuration checkout root. They use `.env.prod` and do not expose the password in command history. Use `--project-name fluxis-env-prod` so the one-off command joins the PROD Compose network and can resolve `postgres_prod`. `--build` includes the current backend source, including the one-off command:
 
 ```powershell
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --server.port=0
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --server.port=0
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --spring.main.web-application-type=none
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --spring.main.web-application-type=none
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --spring.main.web-application-type=none
 ```
 
 Bootstrap is only for an empty users table. Reset and check require exactly one account; password check is read-only. Do not run bootstrap again after the account exists.

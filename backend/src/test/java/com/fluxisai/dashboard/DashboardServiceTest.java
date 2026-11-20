@@ -48,7 +48,8 @@ class DashboardServiceTest {
         proposal.totals(new BigDecimal("100.00"));
         when(proposals.findAllByUserId(userId, Pageable.unpaged())).thenReturn(new PageImpl<>(List.of(proposal)));
         var subscription = new Subscription(userId, "Hosting", "Provider", new BigDecimal("9.22"), "EUR",
-                SubscriptionPeriodicity.MONTHLY, null, null, SubscriptionStatus.ACTIVE, null, null, null);
+                SubscriptionPeriodicity.MONTHLY, null, java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1),
+                SubscriptionStatus.ACTIVE, null, null, null);
         when(subscriptions.findAllByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)).thenReturn(List.of(subscription));
         when(tasks.findAllByUserId(userId, Pageable.unpaged())).thenReturn(new PageImpl<>(List.of()));
 
@@ -56,5 +57,6 @@ class DashboardServiceTest {
         var margin = response.margins().getFirst();
         assertEquals("EUR", margin.currency());
         assertEquals(0, new BigDecimal("90.78").compareTo(margin.margin()));
+        assertEquals(0, response.subscriptions().upcomingRenewals());
     }
 }
