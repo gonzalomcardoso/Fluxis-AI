@@ -56,3 +56,7 @@ pgdata/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local AI agent tooling
+.xgrok/
+AGENTS.md
