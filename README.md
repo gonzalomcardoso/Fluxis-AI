@@ -45,7 +45,7 @@ fluxis-ai/
 ## Getting started
 
 See [Milestone 1](docs/milestone-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
-See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures.
+See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures. The complete clean-machine installation path is in [Installation from Scratch](docs/installation-from-scratch.md). PROD diagnosis and recovery are in [Production Incidents and Recovery](docs/production-incidents-and-recovery.md).
 
 Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend; JDK 25 (Temurin) is needed for local Maven builds and tests.
 
@@ -82,6 +82,8 @@ The development database settings are in `.env.dev`. See [Local Environments](do
 - The assistant never runs Git commands that modify the repository; the user owns all Git operations.
 - Validation is strictly sequential: DEV, then TEST, then PROD, with explicit user approval between environments.
 - Database migrations are prepared and documented first and are never executed without explicit approval.
+- No agent may modify configurations, credentials, secrets, volumes or operational state without explicit prior owner consent.
+- PROD is protected: never run `docker compose down -v`, delete the PostgreSQL volume or rebuild PROD services without express authorization.
 
 See the [Master Prompt](docs/master-prompt.md) for the highest-priority rules.
 

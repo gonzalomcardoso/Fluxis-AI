@@ -2,7 +2,8 @@
 
 Flyway is the source of truth for the database schema. Hibernate validates the
 schema at startup; it does not create or update tables. Migrations `V1` through
-`V11` define the current day-14 schema.
+`V14` define the current schema. `V12`-`V14` align proposal, proposal-item,
+proposal-history and service monetary/quantity columns to `NUMERIC(19,2)`.
 
 All user-owned tables include a `user_id` foreign key to `users.id` with
 `ON DELETE CASCADE`. Application queries must always include the authenticated

@@ -13,6 +13,10 @@ DEV validated -> TEST validated -> PROD validated
 Do not skip environments. Do not continue automatically after a successful
 environment. Each transition requires explicit user confirmation.
 
+The owner-consent rule in [master-prompt.md](master-prompt.md) applies to every
+gate. Inspecting, diagnosing and validating are allowed; protected changes
+require explicit prior authorization.
+
 ## Gate rules
 
 1. Work only on the current environment.
@@ -75,6 +79,8 @@ Required checks:
 - Confirm public registration and synthetic seeders are disabled.
 - Verify CSRF protection is bound to the server-side session.
 - Verify session-cookie security settings for the deployment context.
+- Verify the running backend image and container are current; inspect `/app/app.jar` for the expected controllers and Flyway migrations when an outdated image is suspected.
+- Verify Flyway history and checksums, and confirm whether any migration is pending. Validating applied migrations is read-only; applying pending migrations requires explicit approval.
 - Verify one-off bootstrap/reset/check commands terminate correctly.
 - Run the documented backend and frontend checks.
 - Perform a minimal manual smoke test with the production account.
@@ -115,3 +121,21 @@ committed.
 - Fix the issue before asking for approval again.
 - Re-run the affected checks and the environment smoke test.
 - Never use a database volume reset to hide a migration or credential failure.
+
+## Protected operations and incident recovery
+
+Validation never authorizes destructive or protected changes. In particular:
+
+- do not run `docker compose down -v` in PROD;
+- do not delete or recreate the PostgreSQL volume;
+- do not change passwords, credentials, environment files or Compose
+  configuration;
+- do not rebuild or recreate PROD services without explicit owner approval;
+- do not run migrations or restart a service that would apply pending
+  migrations without explicit approval.
+
+If authentication, Flyway, image freshness, an HTTP `404` or any other PROD
+failure is detected, stop and follow
+[Production Incidents and Recovery](production-incidents-and-recovery.md).
+The installation path is documented in
+[Installation from Scratch](installation-from-scratch.md).

@@ -19,3 +19,54 @@ Migration V2 disables all pre-existing accounts and assigns a placeholder BCrypt
 ## Decisions and remaining controls
 
 The session-cookie decision and alternatives are recorded in [ADR-0006](./decisions/0006-session-cookie-authentication.md). The current user model has no roles; the single prod-bootstrap account is the sole account, not a role-based admin. Password reset, rate limiting, production session-store setup, and ownership checks for future resource modules remain future work.
+
+## Owner consent for protected changes
+
+> **NINGÚN AGENTE, ASISTENTE O AUTOMATIZACIÓN PUEDE MODIFICAR CONFIGURACIONES, CREDENCIALES O SECRETOS SIN MI CONSENTIMIENTO EXPLÍCITO Y PREVIO.**
+
+The following operations are protected and require explicit prior owner consent:
+
+- changing PostgreSQL passwords;
+- running `ALTER ROLE` or modifying database users and permissions;
+- modifying `.env`, `.env.dev`, `.env.test`, `.env.prod` or any secrets file;
+- changing environment variables or connection credentials;
+- changing ports, domains, URLs, certificates or session cookies;
+- modifying Docker Compose, volumes, networks or persistence;
+- modifying Spring Boot profiles or security/authentication configuration;
+- modifying deployment configuration;
+- changing user or service permissions.
+
+Before any protected operation, the agent must explain the proposed change, the
+reason, affected files/services/data, risks and consequences, present the exact
+change, and wait for explicit authorization.
+
+A generic request to fix or diagnose a problem is not authorization. Previous
+authorization for another operation is not authorization. Read-only inspection
+is allowed; protected changes are not.
+
+## Production protections
+
+- Never run `docker compose down -v` in PROD.
+- Never delete or recreate the PostgreSQL volume to troubleshoot the backend.
+- Never run migrations without express owner authorization.
+- Never modify production data to facilitate tests.
+- Never change passwords to troubleshoot without authorization.
+- Never rebuild or deploy PROD services without express authorization.
+- Never use DEV or TEST credentials in PROD.
+- Never expose secrets in logs, documentation, shared terminals or responses.
+- Never assume PROD is empty before a destructive operation.
+
+See [production-incidents-and-recovery.md](production-incidents-and-recovery.md)
+for the official diagnosis and recovery procedure.
+
+## Secret handling
+
+- `.env`, `.env.dev`, `.env.test` and `.env.prod` are local files ignored by
+  Git. They must never be committed.
+- Do not print complete container environments; filter to non-secret values.
+- Do not include real passwords, tokens or hashes in documentation, issue
+  reports or chat messages.
+- Use an owner-approved secret manager or local secure storage for real values.
+- Do not reuse DEV or TEST credentials in PROD.
+- If a secret is exposed, stop, report the exposure without repeating the
+  value, and let the owner decide whether rotation is required.
