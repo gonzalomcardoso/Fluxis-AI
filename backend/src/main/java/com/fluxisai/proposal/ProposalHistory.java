@@ -1,0 +1,72 @@
+package com.fluxisai.proposal;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "proposal_history")
+public class ProposalHistory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(name = "proposal_id", nullable = false)
+    private UUID proposalId;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
+
+    @Column(name = "change_type", nullable = false, length = 20)
+    private String changeType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ProposalStatus status;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal total;
+
+    @Column(name = "changed_at", nullable = false)
+    private OffsetDateTime changedAt;
+
+    protected ProposalHistory() {
+    }
+
+    public ProposalHistory(
+            UUID proposalId,
+            UUID userId,
+            String changeType,
+            ProposalStatus status,
+            BigDecimal subtotal,
+            BigDecimal total) {
+        this.proposalId = proposalId;
+        this.userId = userId;
+        this.changeType = changeType;
+        this.status = status;
+        this.subtotal = subtotal;
+        this.total = total;
+        this.changedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    public UUID getId() { return id; }
+    public UUID getProposalId() { return proposalId; }
+    public String getChangeType() { return changeType; }
+    public ProposalStatus getStatus() { return status; }
+    public BigDecimal getSubtotal() { return subtotal; }
+    public BigDecimal getTotal() { return total; }
+    public OffsetDateTime getChangedAt() { return changedAt; }
+}

@@ -1,0 +1,3 @@
+import { apiRequest } from '@/lib/api-client'; import { proposalPageSchema,proposalSchema,type ProposalRequest } from './proposals.types'
+const list=(path:string)=>apiRequest(`${path}?page=0&size=100&sort=createdAt,desc`)
+export async function getProposals(){return proposalPageSchema.parse(await list('/proposals'))}; export async function createProposal(r:ProposalRequest){return proposalSchema.parse(await apiRequest('/proposals',{method:'POST',body:JSON.stringify(r)}))}; export async function updateProposal(id:string,r:ProposalRequest){return proposalSchema.parse(await apiRequest(`/proposals/${id}`,{method:'PUT',body:JSON.stringify(r)}))}; export async function deleteProposal(id:string){await apiRequest(`/proposals/${id}`,{method:'DELETE'})}

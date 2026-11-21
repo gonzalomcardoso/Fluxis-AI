@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/api-client'
+import { uuidSchema } from '@/lib/uuid.schema'
 import type {
   CreateJobOpportunityRequest,
   JobOpportunity,
@@ -7,8 +8,8 @@ import type {
 } from '@/features/job-opportunities/schemas/job-opportunity.schema'
 import { JOB_STATUSES } from '@/features/job-opportunities/schemas/job-opportunity.schema'
 
-const jobOpportunityResponseSchema = z.object({
-  id: z.string().uuid(),
+export const jobOpportunityResponseSchema = z.object({
+  id: uuidSchema,
   companyName: z.string(),
   title: z.string(),
   url: z.string().nullable(),
@@ -22,7 +23,7 @@ const jobOpportunityResponseSchema = z.object({
   updatedAt: z.iso.datetime({ offset: true }),
 })
 
-const pageResponseSchema = z.object({
+export const pageResponseSchema = z.object({
   content: z.array(jobOpportunityResponseSchema),
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
@@ -31,16 +32,14 @@ const pageResponseSchema = z.object({
 })
 
 export async function getJobOpportunities(): Promise<PageResponse<JobOpportunity>> {
-  const response = await apiRequest('/job-opportunities?page=0&size=100&sort=createdAt,desc')
-  return pageResponseSchema.parse(response)
+  return apiRequest('/job-opportunities?page=0&size=100&sort=createdAt,desc', undefined, pageResponseSchema)
 }
 
 export async function createJobOpportunity(
   request: CreateJobOpportunityRequest,
 ): Promise<JobOpportunity> {
-  const response = await apiRequest('/job-opportunities', {
+  return apiRequest('/job-opportunities', {
     method: 'POST',
     body: JSON.stringify(request),
-  })
-  return jobOpportunityResponseSchema.parse(response)
+  }, jobOpportunityResponseSchema)
 }

@@ -15,6 +15,26 @@ describe('apiRequest session and CSRF handling', () => {
     vi.resetModules()
   })
 
+  it('refreshes the CSRF token and retries once when the server rejects it', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ token: 'csrf-old', headerName: 'X-CSRF-TOKEN' }))
+      .mockResolvedValueOnce(jsonResponse({ detail: 'Invalid CSRF token' }, 403))
+      .mockResolvedValueOnce(jsonResponse({ token: 'csrf-new', headerName: 'X-CSRF-TOKEN' }))
+      .mockResolvedValueOnce(jsonResponse({ id: 'user-id' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { apiRequest } = await import('@/lib/api-client')
+
+    await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'user@example.test', password: 'synthetic-password' }),
+    })
+
+    const calls = fetchMock.mock.calls
+    expect(calls).toHaveLength(4)
+    expect(new Headers(calls[1]?.[1]?.headers).get('X-CSRF-TOKEN')).toBe('csrf-old')
+    expect(new Headers(calls[3]?.[1]?.headers).get('X-CSRF-TOKEN')).toBe('csrf-new')
+  })
+
   it('sends cookies and fetches a CSRF token before each session change', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ token: 'csrf-one', headerName: 'X-CSRF-TOKEN' }))
