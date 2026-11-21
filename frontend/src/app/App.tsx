@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
@@ -8,9 +9,26 @@ import { AuthProvider, useAuth } from '@/features/auth/auth-context'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { JobOpportunityListPage } from '@/features/job-opportunities/pages/JobOpportunityListPage'
 import { NewJobOpportunityPage } from '@/features/job-opportunities/pages/NewJobOpportunityPage'
+import { CrmPage } from '@/features/crm/CrmPage'
+import { JobApplicationsPage } from '@/features/job-applications/JobApplicationsPage'
+import { ClientServicesPage } from '@/features/client-services/ClientServicesPage'
+import { ProposalsPage } from '@/features/proposals/ProposalsPage'
+import { SubscriptionsPage } from '@/features/subscriptions/SubscriptionsPage'
+import { TasksPage } from '@/features/tasks/TasksPage'
+import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { es } from '@/i18n/es'
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      if (import.meta.env.DEV) {
+        console.error('TanStack Query error', {
+          queryKey: query.queryKey,
+          error,
+        })
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       retry: 1,
@@ -22,6 +40,7 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
@@ -52,9 +71,16 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/oportunidades" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="oportunidades" element={<JobOpportunityListPage />} />
         <Route path="oportunidades/nueva" element={<NewJobOpportunityPage />} />
+        <Route path="crm" element={<CrmPage />} />
+        <Route path="candidaturas" element={<JobApplicationsPage />} />
+        <Route path="clientes-servicios" element={<ClientServicesPage />} />
+        <Route path="propuestas" element={<ProposalsPage />} />
+        <Route path="suscripciones" element={<SubscriptionsPage />} />
+        <Route path="tareas" element={<TasksPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

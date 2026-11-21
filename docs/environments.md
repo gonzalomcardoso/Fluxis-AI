@@ -2,11 +2,13 @@
 
 Each local environment has its own Compose file, variable file, project, network, database credential, and persistent database volume.
 
+Validation is strictly sequential: **DEV -> TEST -> PROD**. Do not advance to the next environment until the user has run and approved the checks for the current environment. See [Environment Validation Workflow](environment-validation.md), the [Golden Rules](master-prompt.md), [Installation from Scratch](installation-from-scratch.md) and [Production Incidents and Recovery](production-incidents-and-recovery.md).
+
 | Environment | Compose file | Local env file | Backend URLs | PostgreSQL volume |
 |---|---|---|---|---|
 | DEV | `compose.dev.yaml` | `.env.dev` | `8083` | `fluxis-ai_postgres_dev_data` |
-| TEST | `compose.test.yaml` | `.env.test` | `8082` | `fluxis-ai_postgres_test_data` |
-| PROD | `compose.prod.yaml` | `.env.prod` | `8084` | `fluxis-ai_postgres_prod_data` |
+| TEST | `compose.test.yaml` | `.env.test` | `8084` | `fluxis-ai_postgres_test_data` |
+| PROD | `compose.prod.yaml` | `.env.prod` | `8085` | `fluxis-ai_postgres_prod_data` |
 
 The Compose files are self-contained and use separate Docker networks. They retain the existing named database volumes so recreating a container does not remove its data. Do not use `docker compose down -v` or `docker volume rm` when switching configurations.
 
@@ -73,33 +75,114 @@ The dev and test Compose files run the image tags built above and do not build t
 Check health:
 
 ```powershell
-Invoke-RestMethod http://localhost:8082/actuator/health
 Invoke-RestMethod http://localhost:8083/actuator/health
 Invoke-RestMethod http://localhost:8084/actuator/health
+Invoke-RestMethod http://localhost:8085/actuator/health
 ```
 
 Dev frontend: run `npm run dev` from `frontend/`; it proxies to port `8083`.
-Test frontend: run `npm run dev:test` from `frontend/`; it proxies to port `8082`.
-PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8084`.
+Test frontend: run `npm run dev:test` from `frontend/`; it proxies to port `8084`.
+PROD frontend: run `npm run dev:prod` from `frontend/`; it proxies to port `8085`.
 
 Automated backend integration tests use Testcontainers and an ephemeral PostgreSQL instance; they do not connect to these manual Compose databases. Run `.\mvnw.cmd verify` from `backend/`.
 
 After starting an environment, wait for its backend health check to pass before testing the frontend.
 
-If a backend fails with `password authentication failed`, stop there: verify that its env file contains the password matching the PostgreSQL role. Do not delete the database volume to fix a credential mismatch.
+If a backend fails with `password authentication failed`, stop there. Verify, without printing secrets, whether the env file matches the credential already stored in the PostgreSQL volume. Do not delete the database volume and do not change passwords or credentials without explicit owner approval. Follow [Production Incidents and Recovery](production-incidents-and-recovery.md).
 
 ## Environment Data and Security
 
-DEV and TEST run synthetic local accounts and data; PROD disables public registration and synthetic seeders. The PROD database is separate and should contain only data created through the application. PostgreSQL ports for DEV and TEST bind to loopback; PROD PostgreSQL has no published host port.
+DEV runs the `dev` profile and its synthetic development accounts. TEST runs the `test,test-data` profiles against an isolated test database, with the manual-test seeder controlled by `TEST_SEED_PASSWORD`. PROD disables public registration and synthetic seeders. The PROD database is separate and should contain only data created through the application. PostgreSQL ports for DEV and TEST bind to loopback; PROD PostgreSQL has no published host port.
 
 The local PROD simulation uses HTTP and defaults `SESSION_COOKIE_SECURE=false`. Real deployments must use HTTPS and set `SESSION_COOKIE_SECURE=true`. The application has no role model; its single bootstrapped account is not an enforced role-based admin.
 
 To bootstrap the initial PROD account, reset its password, or verify a password against the existing hash, use the interactive commands below from the configuration checkout root. They use `.env.prod` and do not expose the password in command history. Use `--project-name fluxis-env-prod` so the one-off command joins the PROD Compose network and can resolve `postgres_prod`. `--build` includes the current backend source, including the one-off command:
 
 ```powershell
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --server.port=0
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --server.port=0
-docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --server.port=0
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-bootstrap --spring.main.web-application-type=none
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-reset --spring.main.web-application-type=none
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile run --build --rm -it --no-deps --entrypoint java backend_prod -jar /app/app.jar --spring.profiles.active=prod,prod-password-check --spring.main.web-application-type=none
 ```
 
 Bootstrap is only for an empty users table. Reset and check require exactly one account; password check is read-only. Do not run bootstrap again after the account exists.
+
+## PROD operating constraints
+
+### Canonical project and volume names
+
+- Compose project: `fluxis-env-prod`.
+- PostgreSQL service: `postgres_prod`.
+- Backend service: `backend_prod`.
+- Backend container: `env-prod`.
+- PostgreSQL volume: `fluxis-ai_postgres_prod_data`.
+
+Older operational notes or commands may mention the previous project name
+`fluxis-ai`. Always pass `--project-name fluxis-env-prod` so Docker Compose
+addresses the intended project, containers and network. Do not assume that a
+different project name points to the same environment.
+
+The volume has an explicit name and must survive container recreation. Never
+run `docker compose down -v` or `docker volume rm` to solve an authentication,
+backend, image or migration problem.
+
+### Canonical PROD command prefix
+
+From the repository root:
+
+```powershell
+$composeRoot = 'C:\Users\pudre\Documents\GitHub\Fluxis-AI'
+Set-Location $composeRoot
+$prodEnvFile = Join-Path $composeRoot '.env.prod'
+$prodComposeFile = Join-Path $composeRoot 'compose.prod.yaml'
+```
+
+Read-only status:
+
+```powershell
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile ps
+Invoke-RestMethod http://localhost:8085/actuator/health
+```
+
+Rebuild and recreate only the backend after explicit owner approval:
+
+```powershell
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile build --no-cache backend_prod
+docker compose --project-name fluxis-env-prod --env-file $prodEnvFile --file $prodComposeFile up -d --no-deps --force-recreate backend_prod
+```
+
+`--no-deps` prevents PostgreSQL from being recreated. This is a service
+restart/recreation and requires explicit approval in PROD.
+
+### Port and URL coherence
+
+- `compose.prod.yaml` defaults the backend host port to `8085`.
+- The frontend development proxy defaults to `http://localhost:8085` in
+  `frontend/vite.config.ts`.
+- If `PROD_SERVER_PORT` or `APP_PROD_FRONTEND_URL` is changed, review the
+  frontend proxy/API URL and CORS origin as a protected configuration change.
+- Do not change ports, URLs or session-cookie settings without owner approval.
+
+### PostgreSQL credentials and persisted data
+
+Changing `.env.prod` does not rotate the password of an existing PostgreSQL
+role. The role credential and data persist inside the named volume. If
+authentication fails with SQLSTATE `28P01`, use the non-destructive diagnostic
+and recovery procedure in
+[production-incidents-and-recovery.md](production-incidents-and-recovery.md).
+
+### Migration validation versus migration execution
+
+- Validating Flyway history/checksums is read-only.
+- Applying pending migrations changes the schema and requires explicit owner
+  approval.
+- Restarting a service that would automatically apply a pending migration also
+  requires explicit approval.
+- A log message such as `Schema "public" is up to date. No migration necessary.`
+  means no new migration was applied; it does not prove that a migration was
+  executed during that start.
+
+### Installation from scratch
+
+The complete DEV, TEST and PROD installation sequence, prerequisites,
+comparison matrix, command classification and final validation checklist are in
+[installation-from-scratch.md](installation-from-scratch.md).

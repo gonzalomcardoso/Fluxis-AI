@@ -1,5 +1,36 @@
 # Copilot instructions
 
+## Golden rules (highest priority)
+
+These rules override every other instruction in this file or in the task.
+
+1. **Never mutate Git state.**
+   - Never run `git add`, `git commit`, `git push`, `git pull`, `git fetch` when
+     it changes local state, `git merge`, `git rebase`, `git cherry-pick`,
+     `git reset`, `git restore`, `git clean`, `git stash`, `git tag`, or any
+     other Git command that changes the repository or working tree.
+   - Only read-only Git commands are permitted, such as `git status`,
+     `git diff`, `git log`, `git show`, and `git ls-files`.
+   - The user owns all Git operations.
+
+2. **Validate strictly in DEV -> TEST -> PROD order.**
+   - Do not prepare or execute the next environment until the user explicitly
+     confirms that the current environment works correctly.
+   - After providing commands and expected results, stop and wait for the
+     user's evidence and approval.
+   - Follow [environment-validation.md](../docs/environment-validation.md).
+
+3. **Never run a database migration without explicit approval.**
+   - Prepare the migration script and its documentation first.
+   - Explain the version, filename, purpose, affected tables, validation queries,
+     data impact, and rollback or forward-fix strategy.
+   - Do not apply DDL, run Flyway, or restart/recreate a service when startup
+     would automatically apply a pending migration until the user approves.
+   - Follow the strict environment order unless the user explicitly says
+     otherwise.
+
+See [master-prompt.md](../docs/master-prompt.md) for the full operating rules.
+
 ## Project shape
 
 Fluxis AI is a single-repository web platform. The intended MVP is a modular monolith: a React/TypeScript browser client calls a Spring Boot REST API, which owns business rules, authentication and authorization, persistence, integrations, AI orchestration, approvals, and auditing. PostgreSQL stores application data and suggestion/action history. See [architecture.md](../docs/architecture.md).
@@ -26,6 +57,15 @@ The frontend owns presentation, forms, UX validation, loading/error states, and 
 - After a `feat/*` pull request is merged into `dev`, refresh the test backend artifact and Docker image from the integrated `dev` code, then recreate only `backend-test` and verify its health. Preserve `postgres-test` and its volume. The user executes all Git commands and branch switches; ask them to check out `dev` before building if needed. Do not treat opening an unmerged PR as integration.
 - Only the user may authorize creating, updating, or merging a pull request. Never open or manage a PR proactively. After the user confirms a `feat/*` PR has been merged into `dev`, perform the test-backend refresh described above.
 - After a `feat/*` pull request has been merged into `dev`, remind the user to delete both the remote and local feature branch, first switching to `dev`. The user executes all Git commands; provide safe commands such as `git push origin --delete <feature-branch>` and `git branch -d <feature-branch>` only after confirming the merge.
+
+## Environment validation gates
+
+- Validate environments in strict order: **DEV -> TEST -> PROD**.
+- Do not prepare or execute the next environment until the user has run the current environment's checks and explicitly confirmed that they pass.
+- For every environment, provide exact commands and expected results. Then stop and wait for the user's evidence or approval.
+- A failing check keeps the workflow in the current environment. Fix the problem and repeat the checks; never skip forward.
+- Automated tests do not replace the manual smoke test against the current environment's Compose services.
+- Follow [environment-validation.md](../docs/environment-validation.md) for the required checklist and evidence record.
 
 ## Build, test, and lint
 
