@@ -56,10 +56,12 @@ Spring Boot --------> Gmail API
    +----------------> Configurable AI provider (Spring AI)
 ```
 
-Gmail and AI integrations are planned, not part of the current implementation.
-Spring Boot remains the default home for AI features. A Python service is
-optional and requires a specific, documented benefit; it must not receive Gmail
-credentials or authority to execute sensitive actions.
+Gmail connection storage and token encryption are implemented; the interactive
+OAuth flow, synchronization, and Gmail actions are planned for days 16-21. AI
+integration is planned for days 22-27. Spring Boot remains the default home for
+AI features. A Python service is optional and requires a specific, documented
+benefit; it must not receive Gmail credentials or authority to execute sensitive
+actions.
 
 ## Responsibilities
 

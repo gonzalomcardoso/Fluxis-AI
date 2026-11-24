@@ -130,3 +130,5 @@ migrations when their capabilities are implemented.
 - Use Gmail external IDs, not subjects, as integration keys.
 - Keep OAuth tokens encrypted in the backend and never persist them in the
   browser.
+- Store OAuth ciphertext only; supply encryption keys from outside the database
+  and rotate them through an approved procedure.

@@ -7,7 +7,7 @@ Professional productivity web platform: intelligent email management (Gmail), jo
 > **Core principle: AI proposes; the user decides.**
 > AI never sends emails, moves messages, or deletes information without explicit approval. Every approved action is validated and executed by the backend, and the interface marks it as complete only after server confirmation.
 
-**Status:** in development (30-day plan). Days 1-14 are implemented: authentication, job search, CRM, clients and services, proposals, subscriptions, tasks, audit events, and the dashboard. Milestone 1 remains documented in [job opportunities, testing, and continuous integration](docs/milestone-1.md). Gmail and AI are planned for the next phase. Initially for personal use; the architecture is designed to evolve to support multiple users.
+**Status:** in development (30-day plan). Days 1-15 are implemented: authentication, job search, CRM, clients and services, proposals, subscriptions, tasks, audit events, the dashboard, and the encrypted Gmail connection foundation. Milestone 1 remains documented in [job opportunities, testing, and continuous integration](docs/milestone-1.md). The interactive Gmail OAuth flow, synchronization, and AI are the next milestones. Initially for personal use; the architecture is designed to evolve to support multiple users.
 
 ## Technology stack
 
@@ -45,7 +45,7 @@ fluxis-ai/
 ## Getting started
 
 See [Milestone 1](docs/milestone-1.md) for a reproducible local setup, API/database verification, test commands, and CI details.
-See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures. The complete clean-machine installation path is in [Installation from Scratch](docs/installation-from-scratch.md). PROD diagnosis and recovery are in [Production Incidents and Recovery](docs/production-incidents-and-recovery.md).
+See [Development and Test Environments](docs/environments.md) for the separate databases, profiles, and reset procedures. The complete clean-machine installation path is in [Installation from Scratch](docs/installation-from-scratch.md). PROD diagnosis and recovery are in [Production Incidents and Recovery](docs/production-incidents-and-recovery.md). Gmail permissions, costs, token retention, and risks are documented in [Gmail Integration](docs/gmail-integration.md).
 
 Prerequisites: Docker with Compose. Install Node.js 24 LTS (`.nvmrc`) to run the frontend; JDK 25 (Temurin) is needed for local Maven builds and tests.
 

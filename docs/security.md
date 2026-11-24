@@ -12,6 +12,19 @@ The OpenAPI specification is available at `/v3/api-docs`, with Swagger UI at `/s
 
 The frontend checks the current session on load, sends cookies and CSRF headers from a shared API client, and signs out through the backend. Its prod mode hides public registration. The session identifier and CSRF token are not persisted in browser storage.
 
+## Gmail OAuth credentials
+
+Google OAuth tokens are accepted and used only by the backend. `connected_accounts`
+stores AES-256-GCM ciphertext for access and refresh tokens; the encryption key is
+read from `APP_TOKEN_ENCRYPTION_KEY` and never persisted in PostgreSQL. The
+ciphertext is bound to the Fluxis AI user and the Google `sub` claim through
+authenticated associated data. Missing or invalid key material fails closed for
+encryption operations. Disconnecting an account wipes both token ciphertext fields
+and marks the connection `REVOKED`. Tokens must never be returned by a controller,
+written to logs, stored in browser storage, or included in test fixtures with real
+values. See [Gmail Integration](./gmail-integration.md) for scopes, retention, and
+the owner-operated Google Cloud setup.
+
 ## Existing accounts and local seed data
 
 Migration V2 disables all pre-existing accounts and assigns a placeholder BCrypt hash because no original passwords exist to migrate safely. The dev seeder activates only its synthetic local accounts using `DEV_SEED_PASSWORD`. The optional test-data seeder uses `TEST_SEED_PASSWORD`. Both example values are for local use only and should be replaced in `.env`; never log or commit actual credentials.
