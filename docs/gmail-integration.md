@@ -45,7 +45,7 @@ La consola de Google cambia con frecuencia; los nombres pueden variar ligerament
    - `https://www.googleapis.com/auth/gmail.metadata`
 5. En **Clients**, crear un cliente OAuth de tipo **Web application**:
    - Redirect URI de desarrollo:
-     `http://localhost:8080/api/oauth/google/callback`.
+     `http://localhost:8080/api/gmail/oauth/callback`.
    - Añadir una URI distinta y exacta para TEST y PROD cuando existan esos entornos.
      No usar comodines.
 6. Descargar o copiar las credenciales directamente al gestor de secretos local. No
