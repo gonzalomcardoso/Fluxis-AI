@@ -19,4 +19,13 @@ public record OAuthTokens(
         }
         scopes = scopes == null ? List.of() : List.copyOf(scopes);
     }
+
+    /**
+     * Returns a safe representation that never includes token values.
+     */
+    @Override
+    public String toString() {
+        return "OAuthTokens[hasRefreshToken=%s, expiresAt=%s, scopes=%s]"
+                .formatted(refreshToken != null, expiresAt, scopes);
+    }
 }
