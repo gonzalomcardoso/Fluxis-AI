@@ -1,5 +1,6 @@
 package com.fluxisai.gmail;
 
+import com.fluxisai.audit.AuditEventService;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -19,15 +20,16 @@ class GmailConnectionServiceTest {
 
     private ConnectedAccountService connectedAccounts;
     private GoogleOAuthClient googleOAuthClient;
+    private AuditEventService audit;
     private GmailConnectionService service;
 
     @BeforeEach
     void setUp() {
         connectedAccounts = mock(ConnectedAccountService.class);
         googleOAuthClient = mock(GoogleOAuthClient.class);
-        service = new GmailConnectionService(connectedAccounts, googleOAuthClient);
+        audit = mock(AuditEventService.class);
+        service = new GmailConnectionService(connectedAccounts, googleOAuthClient, audit);
     }
-
     @Test
     void revokesRefreshTokenAndAlwaysCleansLocally() {
         when(connectedAccounts.currentUserTokens()).thenReturn(Optional.of(tokens("access", "refresh")));
@@ -36,6 +38,7 @@ class GmailConnectionServiceTest {
 
         verify(googleOAuthClient).revokeToken("refresh");
         verify(connectedAccounts).disconnectCurrentUser();
+        verify(audit).record("GMAIL_DISCONNECT_SUCCESS", "GMAIL", null, "DISCONNECT", java.util.Collections.emptyMap());
     }
 
     @Test
@@ -46,6 +49,7 @@ class GmailConnectionServiceTest {
 
         verify(googleOAuthClient).revokeToken("access");
         verify(connectedAccounts).disconnectCurrentUser();
+        verify(audit).record("GMAIL_DISCONNECT_SUCCESS", "GMAIL", null, "DISCONNECT", java.util.Collections.emptyMap());
     }
 
     @Test
@@ -57,6 +61,7 @@ class GmailConnectionServiceTest {
         assertThatCode(service::disconnectCurrentUser).doesNotThrowAnyException();
 
         verify(connectedAccounts).disconnectCurrentUser();
+        verify(audit).record("GMAIL_DISCONNECT_SUCCESS", "GMAIL", null, "DISCONNECT", java.util.Collections.emptyMap());
     }
 
     @Test
@@ -67,6 +72,7 @@ class GmailConnectionServiceTest {
 
         verify(googleOAuthClient, never()).revokeToken(org.mockito.ArgumentMatchers.anyString());
         verify(connectedAccounts).disconnectCurrentUser();
+        verify(audit).record("GMAIL_DISCONNECT_SUCCESS", "GMAIL", null, "DISCONNECT", java.util.Collections.emptyMap());
     }
 
     @Test
@@ -76,6 +82,8 @@ class GmailConnectionServiceTest {
         assertThatCode(service::disconnectCurrentUser).doesNotThrowAnyException();
 
         verify(connectedAccounts).disconnectCurrentUser();
+        // Since it's a RuntimeException, it logs the failure
+        verify(audit).record("GMAIL_DISCONNECT_FAILED", "GMAIL", null, "DISCONNECT", java.util.Collections.emptyMap());
     }
 
     private OAuthTokens tokens(String accessToken, String refreshToken) {
