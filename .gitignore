@@ -61,3 +61,7 @@ Thumbs.db
 # Local AI agent tooling
 .xgrok/
 AGENTS.md
+
+# Ignore local wrapper changes
+backend/mvnw
+backend/mvnw.cmd
